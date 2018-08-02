@@ -17,17 +17,17 @@ for path in l_path:
      for match in re.finditer(regex, data, re.MULTILINE | re.DOTALL):
          name, argv = match.groups()
          #argv = const char* job, const MKL_INT* n, double* a, const MKL_INT* lda,
-         l = [ [i, j.split('*')[-1].strip()] for i,j  in enumerate(argv.split(',')) if 'const MKL_INT' in j ]
+
+         # Do the parsing to to random space
+         l = []
+         for i,arg in enumerate(argv.split(',')):
+             regex2= r"const\s+MKL_INT\s*\*\s*(\S+)"
+             m = re.search(regex2, arg.strip())
+             if m:
+                 l.append( (i,m.group(1) ) )
          d_mkl[name] = list(zip(*l)) 
 
 # End parsing mkl
-
-def conv_int(i):
-    try:
-        return int(i)
-    except:
-        return i
-
 def convtoseonc(i,p):
     d = {'ns':10**(-9),
          'us':10**(-6),
@@ -42,13 +42,30 @@ regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\S+?)\((?P<args>.*)\)\s(?P<time>\S+?)(?
 
 thr_time = 1.e-9
 
+d_mkl_name = {}
+
 with open(sys.argv[1], 'r') as f:
     for line in f:
+
+      m = re.search(regex, line, re.MULTILINE)
+      if not m:
+          continue
+
       name, argv, t,exp = re.search(regex, line, re.MULTILINE).groups()
       t2 = convtoseonc(t,exp)
       if t2 >= thr_time:
-         l = argv.split(',')
-         d_argv[name].append([ l[idx] for idx,n in zip(*d_mkl[name])] + [t2])
+        l = argv.split(',')
+
+        l2 = []
+        l3 = []
+        for idx,n in zip(*d_mkl[name]):
+            if 'x' not in l[idx]:
+                l2.append(int(l[idx]))
+                l3.append(n)
+
+        d_mkl_name[name]=l3
+        d_argv[name].append(l2+ [t2])
+
 
 # Print agreagate function
 d_agreg = {name: ( len(k), sum(i[-1] for i in k) ) for name,k in d_argv.items()}
@@ -65,7 +82,7 @@ from collections import Counter
 
 d_count_argv_imp = defaultdict(dict)
 for name_fct,l_argv in d_argv.items():
-    l_name = d_mkl[name_fct][1]
+    l_name = d_mkl_name[name_fct]
     for i, name in enumerate(l_name):
         d_count_argv_imp[name_fct][name]= Counter(argv[i] for argv in l_argv)
 
@@ -78,27 +95,22 @@ tot_time = sum(i[-1] for i in d_agreg.values())
 table2 = []
 for name_fct, (count, time) in d_agreg.items():
     table2.append([name_fct,count, time, "{:.0%}".format(time/tot_time) ])
+
 table2 = sorted(table2, key=lambda ele: ele[-2], reverse=True)[:thr]
 print (tabulate(table2,headers=["Name fct","n","tot_time","tot_time %"]))
 
 
 
-table = [ ["Name fct","Name_argv", "Most common","Min", "Max" ] ]
+table = [ ["Name fct","Name_argv","Min", "Max" ] ]
 for name_fct, *_ in table2:
     for name_argv, c in d_count_argv_imp[name_fct].items():
         n = sum(c.values())
-        l = c.most_common(3)
-        
-        l2 = [ (i,j/n) for i,j in l ]
-        l2 += [ ('misc', 1-sum(j for _, j in l2)) ] 
-        
-        l2 = [ (i,"{:.0%}".format(j)) for i,j in l2 if j > 0.0001]
 
-        table.append( [name_fct, name_argv, l2, min(c.elements()), max(c.elements()) ] )
+        table.append( [name_fct, name_argv, min(c.values()), max(c.values()) ] )
 
 print (tabulate(table,headers="firstrow"))
 
-table = sorted(([n, list(zip(d_mkl[n][1],argv)), d4_b[(n,argv)], v] for (n,argv),v in d4.items()), key = lambda ele: ele[-1], reverse = True)
+table = sorted(([n, list(zip(d_mkl_name[n],argv)), d4_b[(n,argv)], v] for (n,argv),v in d4.items()), key = lambda ele: ele[-1], reverse = True)
 
 partial_time = sum(i[-1] for i in table[:thr])
 table_f = table[:thr] + [["Misc", "", "", tot_time - partial_time]]
