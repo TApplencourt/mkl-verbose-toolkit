@@ -1,4 +1,7 @@
-# Usage
+# mkl_parse 
+Generate a summary for "MKL_verbosed" log files
+
+## Usage
 ```
 usage: mkl_parse.py [-h] [filename]
 
@@ -12,7 +15,7 @@ optional arguments:
 ```
 
 
-# Output
+##  Output
 
 ```
 zcat log.out | ./mkl_parse.py
@@ -76,3 +79,9 @@ dco135:1:1*53:135:135         2
 dco135:1:1*134:135:135      114
 dco135:1:1*201:135:135       14
 ```
+
+# mkl_hook 
+
+A little wrapper to source the `MKL_VERBOSE` enviroment by only one MPI_RANK.
+
+
