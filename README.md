@@ -1,5 +1,19 @@
+When building applications that call Intel MKL functions, it may be useful to determine:
+ - which computational functions are called,
+ - what parameters are passed to them, and
+  - how much time is spent to execute the functions.
+
+You can get an application to print this information to a standard output device by enabling Intel MKL Verbose. 
+
+- To restrict the verbosity at one MPI_RANK, used `mkl_hook` wrapper.
+- To parse the log file and generate summary table, use `mkl_parse`.
+
 # mkl_parse 
-Generate a summary for "MKL_verbosed" log files
+Generate a summary for "MKL_verbosed" log files.
+
+## Requirement:
+- python3
+- tabulate package
 
 ## Usage
 ```
@@ -16,7 +30,6 @@ optional arguments:
 
 
 ##  Output
-
 ```
 zcat log.out | ./mkl_parse.py
 --Group by function--
