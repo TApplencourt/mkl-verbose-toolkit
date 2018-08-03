@@ -31,7 +31,20 @@ optional arguments:
 
 ##  Output
 ```
-zcat log.out | ./mkl_parse.py
+>> zcat log.out | wc -l
+1413113
+
+>> zmore log.out 
+MKL_VERBOSE DCOPY(64,0x7fadd7d32440,1,0x7fadd7d94268,64) 2.32us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+MKL_VERBOSE DCOPY(64,0x7fadd7d32840,1,0x7fadd7d94270,64) 3.33us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+MKL_VERBOSE DCOPY(64,0x7fadd7d32c40,1,0x7fadd7d94278,64) 2.85us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+MKL_VERBOSE DTRSM(R,U,N,N,64,64,0x7fae139802e8,0x7fadd7d94080,64,0x7fadd7d23240,128) 1.59ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+MKL_VERBOSE DTRSM(R,U,N,N,128,64,0x7f6d0bac42e8,0x7f6ccfd94080,64,0x7f6ccfd23040,128) 1.52ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+MKL_VERBOSE DTRSM(R,U,N,N,128,64,0x7f8f8ebcd2e8,0x7f8f52d94080,64,0x7f8f52d23040,128) 1.46ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+MKL_VERBOSE DCOPY(128,0x7f3934194080,1,0x7f39341a9080,64) 52.63us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+MKL_VERBOSE DCOPY(128,0x7f3934194480,1,0x7f39341a9088,64) 1.76us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+
+>> zcat log.out | ./mkl_parse.py
 --Group by function--
 Name fct         n    Time (s)  Tot_time (%)
 ----------  ------  ----------  --------------
