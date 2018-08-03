@@ -15,7 +15,7 @@ When building applications that call Intel MKL functions, it may be useful to de
 
 You can get an application to print this information to a standard output device by enabling Intel MKL Verbose. 
 
-- To restrict the verbosity at one MPI_RANK, used `mkl_hook` wrapper.
+- To restrict the verbosity for one MPI_RANK, use `mkl_hook` wrapper.
 - To parse the log file and generate summary table, use `mkl_parse`.
 
 # mkl_parse 
