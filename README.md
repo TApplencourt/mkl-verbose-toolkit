@@ -15,6 +15,7 @@ optional arguments:
 # Output
 
 ```
+zcat log.out | ./mkl_parse.py
 --Group by function--
 Name fct         n    Time (s)  Tot_time (%)
 ----------  ------  ----------  --------------
