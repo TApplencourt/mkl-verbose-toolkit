@@ -5,7 +5,6 @@ from collections import defaultdict, Counter
 from itertools import chain, islice
 from tabulate import tabulate
 
-
 #  _
 # |_) _. ._ _ o ._   _    |   _   _
 # |  (_| | _> | | | (_|   |_ (_) (_|
@@ -130,8 +129,8 @@ def table_fft(c):
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filename', nargs='?')
+    parser = argparse.ArgumentParser(description='Generate a summary for "MKL_verbosed" log files')
+    parser.add_argument('filename', nargs='?', help='If filename not provided, std.in will be used')
     args = parser.parse_args()
     if args.filename:
         f = open(args.filename, 'r')
