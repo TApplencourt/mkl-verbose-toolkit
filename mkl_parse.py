@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import re
+import os
 from collections import defaultdict, Counter
 from itertools import chain, islice
 from tabulate import tabulate
@@ -60,23 +61,27 @@ def parse_file(f,thr_time = 1.e-9):
 # |  (_| | _> (/_   |  | |\ |_   | | (/_ (_| (_| (/_ | _> 
 #                                                         
 def get_label_for_argv(d_index_keep):
-    d_mkl_name = {}    
-    # Parse mkl header
-    l_path = ["/soft/compilers/intel/mkl/include/mkl_lapack.h", "/soft/compilers/intel/mkl/include/mkl_blas.h"]
+    mkl_path = os.getenv("MKLROOT")
 
-    d_mkl = dict()
-    regex = r"(?P<name>%s)\s*\((?P<arg>.*?)\);" % '|'.join(map(re.escape,d_index_keep))
-    prog = re.compile(regex, re.MULTILINE | re.DOTALL)
+    if mkl_path:
+        l_path = (f"{mkl_path}/include/mkl_lapack.h", f"{mkl_path}/include/mkl_blas.h")
+        regex = r"(?P<name>%s)\s*\((?P<arg>.*?)\);" % '|'.join(map(re.escape,d_index_keep))
+        prog = re.compile(regex, re.MULTILINE | re.DOTALL)
+    else:
+        l_path = ()
+
+    d_mkl_name = dict()
     for path in l_path:
         with open(path, 'r') as f:
             data = f.read() 
             for match in prog.finditer(data):
                 name, argv = match.groups()
                 l_name = [arg.split('*').pop().strip() for arg in argv.split(',') ]
+                d_mkl_name[name] = [l_name[i] for i in d_index_keep[name] ]
 
-                l_idx = d_index_keep[name]
-                d_mkl_name[name] = [l_name[i] for i in l_idx] 
- 
+    for name in set(d_index_keep) - set(d_mkl_name):
+          d_mkl_name[name] = [ f'arg {i}' for i in d_index_keep[name] ]
+
     return d_mkl_name
 
 #  _
@@ -129,8 +134,8 @@ def table_fft(c):
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description='Generate a summary for "MKL_verbosed" log files')
-    parser.add_argument('filename', nargs='?', help='If filename not provided, std.in will be used')
+    parser = argparse.ArgumentParser(description='Generate a summary for "MKL_verbosed" log files. $MKLROOT will be used to match MKL arguments name with respective values.')
+    parser.add_argument('filename', nargs='?', help='If filename is not provided, std.in will be used')
     args = parser.parse_args()
     if args.filename:
         f = open(args.filename, 'r')
