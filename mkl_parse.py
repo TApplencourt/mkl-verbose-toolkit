@@ -73,14 +73,14 @@ def get_label_for_argv(d_index_keep):
     d_mkl_name = dict()
     for path in l_path:
         with open(path, 'r') as f:
-            data = f.read() 
-            for match in prog.finditer(data):
+            for match in prog.finditer(f.read()):
                 name, argv = match.groups()
                 l_name = [arg.split('*').pop().strip() for arg in argv.split(',') ]
                 d_mkl_name[name] = [l_name[i] for i in d_index_keep[name] ]
 
+    # Default values
     for name in set(d_index_keep) - set(d_mkl_name):
-          d_mkl_name[name] = [ f'arg {i}' for i in d_index_keep[name] ]
+          d_mkl_name[name] = [ f'No{i}' for i in d_index_keep[name] ]
 
     return d_mkl_name
 
@@ -100,13 +100,11 @@ def table_min_max(l_fct, d_argv, d_mkl_name):
 
     table_mm = []
     for name_fct in l_fct:
-        l_argv = d_argv[name_fct]
+        l_argv = zip(*d_argv[name_fct])
         l_name = d_mkl_name[name_fct]
 
-        for i, name_argv in enumerate(l_name):
-            c = Counter(argv[i] for argv in l_argv)
-            n = sum(c.values())
-            table_mm.append( [name_fct, name_argv, min(c.values()), max(c.values()) ] )
+        for name_fct, argv in zip(l_name,l_argv):
+            table_mm.append( [name_fct, min(argv),max(argv) ] )
 
     return tabulate(table_mm,headers=["Name fct","Name_argv","Min", "Max" ])
     
