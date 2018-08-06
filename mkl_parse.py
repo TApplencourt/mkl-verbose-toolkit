@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-import sys
-import re
-import os
+import sys, re, os
 from collections import defaultdict, Counter
-from itertools import chain, islice
+from itertools import islice
 from tabulate import tabulate
 
 #  _
@@ -21,7 +19,7 @@ def parse_file(f,thr_time = 1.e-9):
     d_index_keep = {}
     tot_time = 0
 
-    regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\S+?)\((?P<args>.*)\)\s(?P<time>\S+?)(?P<exp>[a-z]+)"
+    regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
     prog_mkl = re.compile(regex)
 
     regex = r"^MKL_VERBOSE FFT.+?\|(.*?)\|"
@@ -30,25 +28,30 @@ def parse_file(f,thr_time = 1.e-9):
     fft_c = Counter()
     for line in f:
 
+        # BLAS / LAPCACK
         mkl = prog_mkl.search(line)
         if mkl:
         
             name, argv, t, exp = mkl.groups()
+
+            # Time
             t2 =  float(t)*d_time[exp]
             tot_time += t2
 
+            # Update d_argv
             if t2 >= thr_time:
-                l2, l3 = [], []
-                for i,s in enumerate(argv.split(',')):
-                    if s.isdigit() or (s.startswith('-') and s[1:].isdigit()):
-                        l2.append(int(s))
-                        l3.append(i)
+                l = [ (i, int(s) ) for i,s in enumerate(argv.split(',')) if s.isdigit() or (s.startswith('-') and s[1:].isdigit()) ]
+                try: 
+                    l_idx, l_val = zip(*l)
+                except ValueError:
+                    l_idx, l_val = (), ()
 
-                if name not in d_index_keep or (len(l3) < len(d_index_keep[name])):
-                    d_index_keep[name] = l3
+                if name not in d_index_keep or (len(l_idx) < len(d_index_keep[name])):
+                    d_index_keep[name] = l_idx
 
-                d_argv[name].append(l2+ [t2])
+                d_argv[name].append(l_val+ (t2,) )
 
+        # FFT
         fft = prog_fft.search(line)
         if fft:
             data = fft.group(1).strip()
@@ -78,7 +81,7 @@ def get_label_for_argv(d_index_keep):
                 l_name = [arg.split('*').pop().strip() for arg in argv.split(',') ]
                 d_mkl_name[name] = [l_name[i] for i in d_index_keep[name] ]
 
-    # Default values
+    # Default values for argv not find
     for name in set(d_index_keep) - set(d_mkl_name):
           d_mkl_name[name] = [ f'No{i}' for i in d_index_keep[name] ]
 
@@ -96,6 +99,7 @@ def table_accumulation(l_fct, d_agreg):
         table_accu.append( [fct_name, n, t, f"{t/tot_time:.0%}"] )
     return tabulate(table_accu,headers=["Name fct","n","Time (s)","Tot_time (%)"])
 
+
 def table_min_max(l_fct, d_argv, d_mkl_name):
 
     table_mm = []
@@ -103,26 +107,32 @@ def table_min_max(l_fct, d_argv, d_mkl_name):
         l_argv = zip(*d_argv[name_fct])
         l_name = d_mkl_name[name_fct]
 
-        for name_fct, argv in zip(l_name,l_argv):
-            table_mm.append( [name_fct, min(argv),max(argv) ] )
+        for name_argv, argv in zip(l_name,l_argv): #l_name does not containt time
+            table_mm.append( [name_fct, name_argv, min(argv),max(argv) ] )
 
     return tabulate(table_mm,headers=["Name fct","Name_argv","Min", "Max" ])
-    
+
 def table_accumulation_argv(d_argv, d_mkl_name, thr):
-    d4 = defaultdict(float)
-    d4_b = defaultdict(int)
-
+    '''
+    For sake of memory we store only a buffer of Thr value
+    containt the count and total time of a specific argument for a specific function
+    '''
+    d_buffer = {}
     for name, l_argv in d_argv.items():
+
+        d = defaultdict(list)
         for *argv,time in l_argv:
-            key = (name,tuple(argv))
-            d4[key] += time
-            d4_b[key] += 1
+            d[tuple(argv)].append(time)
 
-    i_table = ([n, list(zip(d_mkl_name[n],argv)), d4_b[(n,argv)], t, f"{t/tot_time:.0%}"] for (n,argv),t in d4.items())
-    table = sorted(i_table, key = lambda ele: ele[-2], reverse = True)[:thr]
+        # Create a tempory dictionary with the cumulative time and number of occurance,
+        # Then update the buffer and truncate it to keep the Thr greasted time
+        d_buffer.update( ( (name,k),(sum(v), len(v)) ) for k,v in d.items())
+        d_buffer = dict(sorted(d_buffer.items(), key=lambda k: k[1][0], reverse = True)[:thr])
 
-    partial_time = sum(i[-2] for i in table)
-    table = table + [["Misc", "", "", tot_time - partial_time, f"{1-(partial_time/tot_time):.0%}"]]
+    table = [ [n, list(zip(d_mkl_name[n],argv)), c, t, f"{t/tot_time:.0%}"] for (n,argv),(t,c) in d_buffer.items() ]
+
+    partial_time = sum(t for t,_ in d_buffer.values())
+    table.append(["Misc", "", "", tot_time - partial_time, f"{1-(partial_time/tot_time):.0%}"])
 
     return tabulate(table, headers=["Name fct","Argv", "Count","Time (s)", "Time (%)"])
 
