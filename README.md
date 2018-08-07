@@ -123,11 +123,9 @@ Double       Complex   OutofPlace   [1, 1]   192:1:1*100:192:192                
 - FFT problems can be batched, "\*" is used as a separator between batch. In the 'Ranks' collums, each batch rank are displayed.
 
 # mkl_hook
+Wrapper  for your application. Assure that only one MPI_RANK set the `MKL_VERBOSE` enviroment.
 
-A little wrapper to source the `MKL_VERBOSE` enviroment by only one MPI_RANK.
-
-# mkl_hook 
-
-A little wrapper to source the `MKL_VERBOSE` enviroment by only one MPI_RANK.
-
-
+```
+Usage:
+./mkl_hook $prog $argv
+```
