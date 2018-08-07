@@ -22,7 +22,7 @@ def parse_file(f,thr_time = 1.e-9):
     regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
     prog_mkl = re.compile(regex)
 
-    regex = r"^MKL_VERBOSE FFT.+?\|(.*?)\|"
+    regex = r"^MKL_VERBOSE FFT.+?\| (?P<precision>[sd])(?P<domain>[cr])(?P<placement>[io])(.*?) \|"
     prog_fft = re.compile(regex)
 
     fft_c = Counter()
@@ -54,8 +54,7 @@ def parse_file(f,thr_time = 1.e-9):
         # FFT
         fft = prog_fft.search(line)
         if fft:
-            data = fft.group(1).strip()
-            fft_c.update([data])
+            fft_c.update([fft.groups()])
 
     return d_argv, d_index_keep, tot_time, fft_c
 
@@ -137,7 +136,23 @@ def table_accumulation_argv(d_argv, d_mkl_name, thr):
     return tabulate(table, headers=["Name fct","Argv", "Count","Time (s)", "Time (%)"])
 
 def table_fft(c):
-    return tabulate(c.items(), headers=["fft", "count"])
+
+    d_fft = {'s': 'Single',
+             'd': 'Double',
+             'c': 'Complex',
+             'r': 'Real',
+             'i': 'InPlace',
+             'o': 'OutofPlace'}
+
+   
+    table = []
+    for (*arg,data),count in c.items():
+
+        l_dim_batch = [i.count('x')+1 for i in data.split('*')]
+
+        table.append( [*list(map(d_fft.get,arg)), l_dim_batch, data,count] )
+
+    return tabulate(table, headers=["Precision", "Domain", "Placement", "Dimensions", "fft", "Count"])
 
 if __name__ == '__main__':
     import argparse
