@@ -96,7 +96,7 @@ def table_accumulation(l_fct, d_agreg):
     for fct_name in l_fct:
         n, t = d_agreg[fct_name]
         table_accu.append( [fct_name, n, t, f"{t/tot_time:.0%}"] )
-    return tabulate(table_accu,headers=["Name fct","n","Time (s)","Tot_time (%)"])
+    return tabulate(table_accu,headers=["Function","N","Time (s)","Time (%)"])
 
 
 def table_min_max(l_fct, d_argv, d_mkl_name):
@@ -109,7 +109,7 @@ def table_min_max(l_fct, d_argv, d_mkl_name):
         for name_argv, argv in zip(l_name,l_argv): #l_name does not containt time
             table_mm.append( [name_fct, name_argv, min(argv),max(argv) ] )
 
-    return tabulate(table_mm,headers=["Name fct","Name_argv","Min", "Max" ])
+    return tabulate(table_mm,headers=["Function","Arg", "Min", "Max" ])
 
 def table_accumulation_argv(d_argv, d_mkl_name, thr):
     '''
@@ -133,7 +133,7 @@ def table_accumulation_argv(d_argv, d_mkl_name, thr):
     partial_time = sum(t for t,_ in d_buffer.values())
     table.append(["Misc", "", "", tot_time - partial_time, f"{1-(partial_time/tot_time):.0%}"])
 
-    return tabulate(table, headers=["Name fct","Argv", "Count","Time (s)", "Time (%)"])
+    return tabulate(table, headers=["Function", "Args", "Count","Time (s)", "Time (%)"])
 
 def table_fft(c):
 
@@ -152,7 +152,7 @@ def table_fft(c):
 
         table.append( [*list(map(d_fft.get,arg)), l_dim_batch, data,count] )
 
-    return tabulate(table, headers=["Precision", "Domain", "Placement", "Dimensions", "fft", "Count"])
+    return tabulate(table, headers=["Precision", "Domain", "Placement", "Ranks", "I/O tensors", "Count"])
 
 if __name__ == '__main__':
     import argparse
@@ -178,21 +178,21 @@ if __name__ == '__main__':
         d_agreg = dict(sorted(i_agreg, key=lambda x: x[1][-1],reverse=True))
 
         l_fct = list(islice(d_agreg, thr))
-        print ("--Group by function--")
+        print ("--LAPACK / Accumulation--")
         print (table_accumulation(l_fct,d_agreg))
         print ("")
         # Table min / max
-        print ("--Min Max arguments of function--") 
+        print ("--LAPACK / Function arguments--") 
         print (table_min_max(l_fct, d_argv, d_mkl_name))
         print ("")
 
         # Table accu by argv
-        print ("--Group by arguments--")
+        print ("--LAPACK / Function call by cummulative time--")
         print (table_accumulation_argv(d_argv, d_mkl_name,thr))
         print ("")
 
     # fft
     if fft:
-        print ("--FFT information--")
+        print ("--FFT / Summary--")
         print (table_fft(fft))
         print ("")
