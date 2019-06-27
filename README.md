@@ -25,10 +25,14 @@ For LAPACK, display the cummulative time spend by function, the range of argumen
 
 For FTT, display the rank and I/O tensors. Support batched calls.
 
-## Requirement:
+## Requirement / Installation:
 - python3
 - tabulate package
 
+```
+pip install -r requirements.txt
+conda install --file requirements.txt
+```
 ## Usage
 ```
 usage: mkl_parse.py [-h] [filename]
