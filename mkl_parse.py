@@ -68,20 +68,21 @@ class displayBLAS():
         headers = ['Name', 'Argv','Count (#)','Time (s)']
         top = ( (name, self.translate_argv(name,argv), count, time) for (_, name, *argv), (count, time) in self.r0.longuest(n) )
         print ('')
-        print (f'Top {n} function by execution time accumulated by arguments')
+        print (f'Top {n} function by execution time (accumulated by arguments)')
         print (tabulate(top, headers))
 
     def display_merge_name(self, n):
         headers = ['Name','Count (#)','Time (s)']
         top = ( (name, count, time) for (_, name), (count, time) in self.r1.longuest(n) )
         print ('')
-        print (f'Top {n} function by execution time accumulated by names')
+        print (f'Top {n} function by execution time (accumulated by names)')
         print (tabulate(top, headers))
     
     def display_merge_type(self, n):
         headers = ['','Count (#)','Time (s)']
         top = ( (mkl_type, count, time) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
         print ('')
+        print ('Total time')
         print (tabulate(top, headers))
 
 class displayFFT():
@@ -98,20 +99,21 @@ class displayFFT():
         top_one_collumn = [ (*argv, time) for _, *argv, time in top]
         headers = ['precision','domain','direction','placement','dimensions','Time (s)']
         print ('')
-        print (f'Top {n} function by execution time')
+        print (f'Top {n} FFT call by execution time')
         print (tabulate(top_one_collumn, headers))
 
     def display_merge_argv(self, n):
         headers = ['precision','domain','direction','placement','dimensions', 'Count (#)','Time (s)']
         top = ( (*argv, count, time) for (_, *argv), (count, time) in self.r0.longuest(n) )
         print ('')
-        print (f'Top {n} function by execution time accumulated by arguments')
+        print (f'Top {n} FFT call  by execution time (accumulated)')
         print (tabulate(top, headers))
 
     def display_merge_type(self, n):
         headers = ['','Count (#)','Time (s)']
         top = ( (mkl_type, count, time) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
         print ('')
+        print ('Total time')
         print (tabulate(top, headers))
 
 
@@ -132,6 +134,8 @@ def regex_iter(f: TextIO) -> Iterator[ Tuple[Match,Match] ]:
 
         d_match = m.groupdict()
         t = float(d_match['time']) * d_rosetta_time[d_match['exp']]
+        if t < 1E-6:
+            continue
 
         if d_match['name'] != 'FFT':
             yield "lapack", parse_lapack(d_match,t)
@@ -173,6 +177,7 @@ def parse_file(f):
 
 
     if l_lapack:
+        print ('~= BLAS / LAPCK ~=')
         db = displayBLAS(l_lapack)
         db.display_raw(10)
         db.display_merge_argv(10)
@@ -181,6 +186,7 @@ def parse_file(f):
 
     print ('')
     if l_fft:
+        print ('~= FFT ~=')
         df = displayFFT(l_fft)
         df.display_raw(10)
         df.display_merge_argv(10)
