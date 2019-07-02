@@ -172,20 +172,19 @@ def parse_file(f):
             l_fft.append(line)
 
 
-    #display(l_lapack, "lapack")
-    db = displayBLAS(l_lapack)
-    db.display_raw(10)
-    db.display_merge_argv(10)
-    db.display_merge_name(10)
-    db.display_merge_type(10)
+    if l_lapack:
+        db = displayBLAS(l_lapack)
+        db.display_raw(10)
+        db.display_merge_argv(10)
+        db.display_merge_name(10)
+        db.display_merge_type(10)
 
     print ('')
-    df = displayFFT(l_fft)
-    df.display_raw(10)
-    df.display_merge_argv(10)
-    df.display_merge_type(10)
-    #display(l_fft, "fft")
-
+    if l_fft:
+        df = displayFFT(l_fft)
+        df.display_raw(10)
+        df.display_merge_argv(10)
+        df.display_merge_type(10)
 if __name__ == '__main__':
     import argparse
 
