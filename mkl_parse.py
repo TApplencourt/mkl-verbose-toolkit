@@ -1,158 +1,190 @@
-#!/usr/bin/env python
-import sys, re, os
-from collections import defaultdict, Counter
-from itertools import islice
+#!/usr/bin/env python3
+
+from typing import Dict, Tuple, Generator, TextIO, Match, Iterator
+import re, heapq
+
 from tabulate import tabulate
+from mvt.reducer import Reducer
+from mvt.cached_property import cached_property
+import os
 
-#  _
-# |_) _. ._ _ o ._   _    |   _   _
-# |  (_| | _> | | | (_|   |_ (_) (_|
-#                    _|           _|
-def parse_file(f,thr_time = 1.e-9):
+class displayBLAS():
 
-    d_time = {'ns':1.e-9,
-              'us':1.e-6,
-              'ms':1.e-3,
-              's': 1}
+    def __init__(self, l):
+        self.l = l
+        self.r0 = Reducer(l)
+        self.r1 = Reducer(self.r0, {k: (0, 1) for k, *_ in self.r0})  
+        self.r2 = Reducer(self.r1, {k: (0, ) for k, *_ in self.r1})  
 
-    d_argv = defaultdict(list)
-    d_index_keep = {}
-    tot_time = 0
+    @cached_property
+    def d_mkl_name(self):
 
-    regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
-    prog_mkl = re.compile(regex)
+        d_index_keep = self.d_index_keep   
 
-    regex = r"^MKL_VERBOSE FFT.+?\| (?P<precision>[sd])(?P<domain>[cr])(?P<placement>[io])(.*?) \|"
-    prog_fft = re.compile(regex)
+        mkl_path = os.getenv("MKLROOT")
 
-    fft_c = Counter()
-    for line in f:
+        if mkl_path:
+            l_path = (f"{mkl_path}/include/mkl_lapack.h", f"{mkl_path}/include/mkl_blas.h")
+            regex = r"(?P<name>%s)\s*\((?P<arg>.*?)\);" % '|'.join(map(re.escape,d_index_keep))
+            prog = re.compile(regex, re.MULTILINE | re.DOTALL)
+        else:
+            l_path = ()
 
-        # BLAS / LAPCACK
-        mkl = prog_mkl.search(line)
-        if mkl:
+        d_mkl_name = dict()
+        for path in l_path:
+            with open(path, 'r') as f:
+                for match in prog.finditer(f.read()):
+                    name, argv = match.groups()
+                    l_name = [arg.split('*').pop().strip() for arg in argv.split(',') ]
+                    d_mkl_name[name] = [l_name[i] for i in d_index_keep[name] ]
+
+        # Default values for argv not find
+        for name in set(d_index_keep) - set(d_mkl_name):
+              d_mkl_name[name] = [ f'No{i}' for i in d_index_keep[name] ]
+
+        return d_mkl_name
+
+    @cached_property
+    def d_index_keep(self):
+        d = {}
+        for _, name, *l_argv, time in self.l:
+            if name not in d:
+                d[name] = [i for i,v in l_argv]
+        return d
+
+    def translate_argv(self, name, argv):
+        return [ (name, v) for name, (_, v) in zip(self.d_mkl_name[name],argv)]
+
+    def display_raw(self, n):
+        # The last element of l is the time
+        top = heapq.nlargest(n, self.l, key=lambda x: x[-1])
+        top_one_collumn = [ (name, self.translate_argv(name,argv), time) for _, name, *argv, time in top]
+        headers = ['Name', 'Argv','Time (s)']
+        print ('')
+        print (f'Top {n} function by execution time')
+        print (tabulate(top_one_collumn, headers))
+
+    def display_merge_argv(self, n):
+        headers = ['Name', 'Argv','Count (#)','Time (s)']
+        top = ( (name, self.translate_argv(name,argv), count, time) for (_, name, *argv), (count, time) in self.r0.longuest(n) )
+        print ('')
+        print (f'Top {n} function by execution time accumulated by arguments')
+        print (tabulate(top, headers))
+
+    def display_merge_name(self, n):
+        headers = ['Name','Count (#)','Time (s)']
+        top = ( (name, count, time) for (_, name), (count, time) in self.r1.longuest(n) )
+        print ('')
+        print (f'Top {n} function by execution time accumulated by names')
+        print (tabulate(top, headers))
+    
+    def display_merge_type(self, n):
+        headers = ['','Count (#)','Time (s)']
+        top = ( (mkl_type, count, time) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
+        print ('')
+        print (tabulate(top, headers))
+
+class displayFFT():
+
+    def __init__(self, l):
+        self.l = l
+        self.r0 = Reducer(l)
+        self.r2 = Reducer(self.r0, {k: (0, ) for k, *_ in self.r0})  
+
+
+    def display_raw(self, n):
+        # The last element of l is the time
+        top = heapq.nlargest(n, self.l, key=lambda x: x[-1])
+        top_one_collumn = [ (*argv, time) for _, *argv, time in top]
+        headers = ['precision','domain','direction','placement','dimensions','Time (s)']
+        print ('')
+        print (f'Top {n} function by execution time')
+        print (tabulate(top_one_collumn, headers))
+
+    def display_merge_argv(self, n):
+        headers = ['precision','domain','direction','placement','dimensions', 'Count (#)','Time (s)']
+        top = ( (*argv, count, time) for (_, *argv), (count, time) in self.r0.longuest(n) )
+        print ('')
+        print (f'Top {n} function by execution time accumulated by arguments')
+        print (tabulate(top, headers))
+
+    def display_merge_type(self, n):
+        headers = ['','Count (#)','Time (s)']
+        top = ( (mkl_type, count, time) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
+        print ('')
+        print (tabulate(top, headers))
+
+
+def regex_iter(f: TextIO) -> Iterator[ Tuple[Match,Match] ]:
+   regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
+   re_mkl = re.compile(regex)
+
+   regex = r"(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx]*)"
+   re_fft = re.compile(regex)
+
+   d_rosetta_time = {'ns':1.e-9, 'us':1.e-6, 'ms':1.e-3, 's': 1}
+
+   for line in f:
         
-            name, argv, t, exp = mkl.groups()
+        m = re_mkl.search(line)
+        if not m:
+            continue
 
-            # Time
-            t2 =  float(t)*d_time[exp]
-            tot_time += t2
+        d_match = m.groupdict()
+        t = float(d_match['time']) * d_rosetta_time[d_match['exp']]
 
-            # Update d_argv
-            if t2 >= thr_time:
-                l = [ (i, int(s) ) for i,s in enumerate(argv.split(',')) if s.isdigit() or (s.startswith('-') and s[1:].isdigit()) ]
-                try: 
-                    l_idx, l_val = zip(*l)
-                except ValueError:
-                    l_idx, l_val = (), ()
+        if d_match['name'] != 'FFT':
+            yield "lapack", parse_lapack(d_match,t)
+        else:
+            d_match.update(re_fft.search(d_match['args']).groupdict())
+            yield "fft", parse_fft(d_match,t)
 
-                if name not in d_index_keep or (len(l_idx) < len(d_index_keep[name])):
-                    d_index_keep[name] = l_idx
+d_rosetta_fft = {'s': "Single",
+                'd': "Double",
+                'c': "Complex",
+                'r': "Real",
+                'f': "Forward",
+                'b': "Backward",
+                'i': "in-place",
+                'o': "out-of-place"}
 
-                d_argv[name].append(l_val+ (t2,) )
+def parse_fft(d_match: Dict, t):
+    i = (d_rosetta_fft[d_match[name]] for name in ('precision','domain','direction','placement'))
+    return tuple(['fft', *i, d_match['dimensions'], t])
 
-        # FFT
-        fft = prog_fft.search(line)
-        if fft:
-            fft_c.update([fft.groups()])
+def parse_lapack(d_match: Dict, t):
 
-    return d_argv, d_index_keep, tot_time, fft_c
+    def parse_lapack_argv(l_args):
+        return ( (i,arg) for i, arg in enumerate(l_args.split(',')) if not arg.startswith('0x') )
 
-#  _                                                      
-# |_) _. ._ _  _    |\/| |/ |    |_|  _   _.  _|  _  ._ _ 
-# |  (_| | _> (/_   |  | |\ |_   | | (/_ (_| (_| (/_ | _> 
-#                                                         
-def get_label_for_argv(d_index_keep):
-    mkl_path = os.getenv("MKLROOT")
-
-    if mkl_path:
-        l_path = (f"{mkl_path}/include/mkl_lapack.h", f"{mkl_path}/include/mkl_blas.h")
-        regex = r"(?P<name>%s)\s*\((?P<arg>.*?)\);" % '|'.join(map(re.escape,d_index_keep))
-        prog = re.compile(regex, re.MULTILINE | re.DOTALL)
-    else:
-        l_path = ()
-
-    d_mkl_name = dict()
-    for path in l_path:
-        with open(path, 'r') as f:
-            for match in prog.finditer(f.read()):
-                name, argv = match.groups()
-                l_name = [arg.split('*').pop().strip() for arg in argv.split(',') ]
-                d_mkl_name[name] = [l_name[i] for i in d_index_keep[name] ]
-
-    # Default values for argv not find
-    for name in set(d_index_keep) - set(d_mkl_name):
-          d_mkl_name[name] = [ f'No{i}' for i in d_index_keep[name] ]
-
-    return d_mkl_name
-
-#  _
-# | \ o  _ ._  |  _.
-# |_/ | _> |_) | (_| \/
-#          |         /
-
-def table_accumulation(l_fct, d_agreg):
-    table_accu = []
-    for fct_name in l_fct:
-        n, t = d_agreg[fct_name]
-        table_accu.append( [fct_name, n, t, f"{t/tot_time:.0%}"] )
-    return tabulate(table_accu,headers=["Function","N","Time (s)","Time (%)"])
+    return tuple(['lapack',d_match['name'], *parse_lapack_argv(d_match['args']), t ])
 
 
-def table_min_max(l_fct, d_argv, d_mkl_name):
+def parse_file(f):
 
-    table_mm = []
-    for name_fct in l_fct:
-        l_argv = zip(*d_argv[name_fct])
-        l_name = d_mkl_name[name_fct]
+    l_fft = []
+    l_lapack = []
+    for (type_, line) in regex_iter(f):
 
-        for name_argv, argv in zip(l_name,l_argv): #l_name does not containt time
-            table_mm.append( [name_fct, name_argv, min(argv),max(argv) ] )
+        if type_ is "lapack":
+            l_lapack.append(line)
+        elif type_ is "fft":
+            l_fft.append(line)
 
-    return tabulate(table_mm,headers=["Function","Arg", "Min", "Max" ])
 
-def table_accumulation_argv(d_argv, d_mkl_name, thr):
-    '''
-    For sake of memory we store only a buffer of Thr value
-    containt the count and total time of a specific argument for a specific function
-    '''
-    d_buffer = {}
-    for name, l_argv in d_argv.items():
+    #display(l_lapack, "lapack")
+    db = displayBLAS(l_lapack)
+    db.display_raw(10)
+    db.display_merge_argv(10)
+    db.display_merge_name(10)
+    db.display_merge_type(10)
 
-        d = defaultdict(list)
-        for *argv,time in l_argv:
-            d[tuple(argv)].append(time)
-
-        # Create a tempory dictionary with the cumulative time and number of occurance,
-        # Then update the buffer and truncate it to keep the Thr greasted time
-        d_buffer.update( ( (name,k),(sum(v), len(v)) ) for k,v in d.items())
-        d_buffer = dict(sorted(d_buffer.items(), key=lambda k: k[1][0], reverse = True)[:thr])
-
-    table = [ [n, list(zip(d_mkl_name[n],argv)), c, t, f"{t/tot_time:.0%}"] for (n,argv),(t,c) in d_buffer.items() ]
-
-    partial_time = sum(t for t,_ in d_buffer.values())
-    table.append(["Misc", "", "", tot_time - partial_time, f"{1-(partial_time/tot_time):.0%}"])
-
-    return tabulate(table, headers=["Function", "Args", "Count","Time (s)", "Time (%)"])
-
-def table_fft(c):
-
-    d_fft = {'s': 'Single',
-             'd': 'Double',
-             'c': 'Complex',
-             'r': 'Real',
-             'i': 'InPlace',
-             'o': 'OutofPlace'}
-
-   
-    table = []
-    for (*arg,data),count in c.items():
-
-        l_dim_batch = [i.count('x')+1 for i in data.split('*')]
-
-        table.append( [*list(map(d_fft.get,arg)), l_dim_batch, data,count] )
-
-    return tabulate(table, headers=["Precision", "Domain", "Placement", "Ranks", "I/O tensors", "Count"])
+    print ('')
+    df = displayFFT(l_fft)
+    df.display_raw(10)
+    df.display_merge_argv(10)
+    df.display_merge_type(10)
+    #display(l_fft, "fft")
 
 if __name__ == '__main__':
     import argparse
@@ -168,31 +200,11 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit()
 
-    thr = 5
-    d_argv, d_index_keep, tot_time, fft = parse_file(f)
-    if d_index_keep:
-        d_mkl_name = get_label_for_argv(d_index_keep)
+    parse_file(f)
 
-        # Table accumulation
-        i_agreg = ( (name, ( len(k), sum(i[-1] for i in k) )) for name,k in d_argv.items())
-        d_agreg = dict(sorted(i_agreg, key=lambda x: x[1][-1],reverse=True))
-
-        l_fct = list(islice(d_agreg, thr))
-        print ("--LAPACK / Accumulation--")
-        print (table_accumulation(l_fct,d_agreg))
-        print ("")
-        # Table min / max
-        print ("--LAPACK / Function arguments--") 
-        print (table_min_max(l_fct, d_argv, d_mkl_name))
-        print ("")
-
-        # Table accu by argv
-        print ("--LAPACK / Function call by cummulative time--")
-        print (table_accumulation_argv(d_argv, d_mkl_name,thr))
-        print ("")
-
-    # fft
-    if fft:
-        print ("--FFT / Summary--")
-        print (table_fft(fft))
-        print ("")
+'''
+ __
+(_      ._ _  ._ _   _. ._
+__) |_| | | | | | | (_| |  \/
+                           /
+'''
