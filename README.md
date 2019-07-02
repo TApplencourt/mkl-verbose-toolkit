@@ -49,82 +49,98 @@ optional arguments:
 
 ##  Example
 ```
->> zcat log.out | wc -l
-1413113
+>> cat log.out | wc -l
+141013
 
->> zmore log.out 
+>> more log.out 
+MKL_VERBOSE Intel(R) MKL 2019.0 Update 2 Product build 20190118 for Intel(R) 64 architecture Intel(R) Advanced Vector Extensions 2 (Intel(R) AVX2) enabled processors, Lnx 2.40GHz intel_thread
+MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1c9c140) 452.82us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cb66c0) 118.36us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1cc0240) 165.08us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cc9680) 84.77us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1cc0240) 102.58us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cc9680) 83.00us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1cc0240) 102.86us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cc9680) 81.79us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1cc0240) 99.21us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cc9680) 83.10us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1cc0240) 99.13us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+
+MKL_VERBOSE DGESVD(S,S,45,45,0x3decc70,45,0x3d4eb30,0x3df0bc0,45,0x3ef4cf0,45,0x3ef8c40,2250,0) 1.39ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
+MKL_VERBOSE DGETRF(3072,3072,0x7fddf19e9010,3072,0x333da80,0) 376.01ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
 ...
-MKL_VERBOSE DCOPY(64,0x7fadd7d32440,1,0x7fadd7d94268,64) 2.32us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
-MKL_VERBOSE DCOPY(64,0x7fadd7d32840,1,0x7fadd7d94270,64) 3.33us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
-MKL_VERBOSE DCOPY(64,0x7fadd7d32c40,1,0x7fadd7d94278,64) 2.85us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
-MKL_VERBOSE DTRSM(R,U,N,N,64,64,0x7fae139802e8,0x7fadd7d94080,64,0x7fadd7d23240,128) 1.59ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
-MKL_VERBOSE DTRSM(R,U,N,N,128,64,0x7f6d0bac42e8,0x7f6ccfd94080,64,0x7f6ccfd23040,128) 1.52ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
-MKL_VERBOSE DTRSM(R,U,N,N,128,64,0x7f8f8ebcd2e8,0x7f8f52d94080,64,0x7f8f52d23040,128) 1.46ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
-MKL_VERBOSE FFT: MAIN_DESC | dco8192:1:1 | THR_LIMIT = 1 | 0.00s CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:2 WDiv:HOST:+0.000
-MKL_VERBOSE FFT: MAIN_DESC | dco8192:1:1 | THR_LIMIT = 1 | 0.00s CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:2 WDiv:HOST:+0.000
-MKL_VERBOSE DCOPY(128,0x7f3934194080,1,0x7f39341a9080,64) 52.63us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
-MKL_VERBOSE DCOPY(128,0x7f3934194480,1,0x7f39341a9088,64) 1.76us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
-...
 
->> zcat log.out | ./mkl_parse.py
---LAPACK / Accumulation--
-Function       N    Time (s)  Time (%)
-----------  ----  ----------  ----------
-DGEMM        295   4.61994    95%
-DTRSM         33   0.15222    3%
-ZDSCAL      1025   0.0370106  1%
-DAXPY       1024   0.0258006  1%
-DDOT           4   0.0140796  0%
+>> cat log.out | ./mkl_parse.py
+~= BLAS / LAPCK ~=
 
---LAPACK / Function arguments--
-Function    Arg      Min      Max
-----------  -----  -----  -------
-DGEMM       m         32     3956
-DGEMM       n         32     1024
-DGEMM       k          3     3956
-DGEMM       lda       64     3956
-DGEMM       ldb        3     3956
-DGEMM       ldc       32     3956
-DTRSM       m         64     3956
-DTRSM       n         64      128
-DTRSM       lda       64      128
-DTRSM       ldb      256     3956
-ZDSCAL      n      12032    48384
-ZDSCAL      incx       1        1
-DAXPY       n       7912     7912
-DAXPY       incx       1        1
-DAXPY       incy       1        1
-DDOT        n      31298  4050944
-DDOT        incx       1        1
-DDOT        incy       1        1
+Top 10 function by execution time
+Name    Argv                                                                     Time (s)
+------  ---------------------------------------------------------------------  ----------
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.52748
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.52185
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50612
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.5057
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50566
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50537
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50495
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50494
+DGETRF  [('m', '3072'), ('n', '3072'), ('lda', '3072'), ('info', '0')]            0.38882
+DGETRF  [('m', '3072'), ('n', '3072'), ('lda', '3072'), ('info', '0')]            0.3767
 
---LAPACK / Function call by cummulative time--
-Function    Args                                                                                Count      Time (s)  Time (%)
-----------  ----------------------------------------------------------------------------------  -------  ----------  ----------
-DGEMM       [('m', 128), ('n', 1024), ('k', 3886), ('lda', 3886), ('ldb', 3956), ('ldc', 128)]  48          1.49949  31%
-DGEMM       [('m', 32), ('n', 1024), ('k', 3886), ('lda', 3886), ('ldb', 3956), ('ldc', 32)]    48          0.61029  13%
-DGEMM       [('m', 512), ('n', 1024), ('k', 1024), ('lda', 512), ('ldb', 1024), ('ldc', 3956)]  14          0.51528  11%
-DGEMM       [('m', 512), ('n', 1024), ('k', 3956), ('lda', 3956), ('ldb', 3956), ('ldc', 512)]  4           0.47738  10%
-DGEMM       [('m', 3886), ('n', 1024), ('k', 128), ('lda', 3886), ('ldb', 128), ('ldc', 3956)]  16          0.38915  8%
-Misc                                                                                                        1.36578  28%
+Top 10 function by execution time (accumulated by arguments)
+Name    Argv                                                                                                                              Count (#)    Time (s)
+------  ------------------------------------------------------------------------------------------------------------------------------  -----------  ----------
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]                                                                     8     4.08207
+DGETRF  [('m', '3072'), ('n', '3072'), ('lda', '3072'), ('info', '0')]                                                                            8     3.01759
+SGEMM   [('transa', 'T'), ('transb', 'N'), ('m', '64'), ('n', '3072'), ('k', '3072'), ('lda', '3072'), ('ldb', '3072'), ('ldc', '64')]          135     1.4472
+SGEMM   [('transa', 'N'), ('transb', 'N'), ('m', '3072'), ('n', '3072'), ('k', '64'), ('lda', '3072'), ('ldb', '64'), ('ldc', '3072')]          135     1.30396
+SGEMM   [('transa', 'T'), ('transb', 'N'), ('m', '62'), ('n', '3072'), ('k', '3072'), ('lda', '3072'), ('ldb', '3072'), ('ldc', '64')]            2     0.02539
+SGEMM   [('transa', 'N'), ('transb', 'N'), ('m', '3072'), ('n', '3072'), ('k', '62'), ('lda', '3072'), ('ldb', '64'), ('ldc', '3072')]            2     0.0198
+SGEMM   [('transa', 'T'), ('transb', 'N'), ('m', '29'), ('n', '3072'), ('k', '3072'), ('lda', '3072'), ('ldb', '3072'), ('ldc', '64')]            1     0.00629
+SGEMM   [('transa', 'T'), ('transb', 'N'), ('m', '4'), ('n', '3072'), ('k', '3072'), ('lda', '3072'), ('ldb', '3072'), ('ldc', '64')]             1     0.00611
+SGEMM   [('transa', 'N'), ('transb', 'N'), ('m', '3072'), ('n', '3072'), ('k', '29'), ('lda', '3072'), ('ldb', '64'), ('ldc', '3072')]            1     0.00422
+SGEMM   [('transa', 'N'), ('transb', 'N'), ('m', '3072'), ('n', '3072'), ('k', '4'), ('lda', '3072'), ('ldb', '64'), ('ldc', '3072')]             1     0.00329
 
---FFT / Summary--
-Precision    Domain    Placement    Ranks    I/O tensors                      Count
------------  --------  -----------  -------  -----------------------------  -------
-Double       Complex   OutofPlace   [1, 1]   192:1:1*398:192:192                  1
-Double       Complex   InPlace      [2, 1]   192:192:192x192:1:1*3:36864:0        1
-Double       Complex   OutofPlace   [1, 1]   192:1:1*100:192:192                  1
+Top 10 function by execution time (accumulated by names)
+Name      Count (#)    Time (s)
+------  -----------  ----------
+DGETRI            8     4.08207
+DGETRF            8     3.01759
+SGEMM           278     2.81626
+DGESVD            1     0.00139
+
+Total time
+          Count (#)    Time (s)
+------  -----------  ----------
+lapack          295     9.91731
+
+~= FFT ~=
+
+Top 10 FFT call by execution time
+precision    domain    direction    placement    dimensions      Time (s)
+-----------  --------  -----------  -----------  ------------  ----------
+Double       Complex   Forward      in-place     30x30x30      0.00045282
+Double       Complex   Forward      in-place     30x30x30      0.00016508
+Double       Complex   Backward     in-place     30x30x30      0.00011836
+Double       Complex   Forward      in-place     30x30x30      0.00010286
+Double       Complex   Forward      in-place     30x30x30      0.00010258
+Double       Complex   Forward      in-place     30x30x30      9.921e-05
+Double       Complex   Forward      in-place     30x30x30      9.913e-05
+Double       Complex   Backward     in-place     30x30x30      8.477e-05
+Double       Complex   Backward     in-place     30x30x30      8.31e-05
+Double       Complex   Backward     in-place     30x30x30      8.3e-05
+
+Top 10 FFT call  by execution time (accumulated)
+precision    domain    direction    placement    dimensions      Count (#)    Time (s)
+-----------  --------  -----------  -----------  ------------  -----------  ----------
+Double       Complex   Forward      in-place     30x30x30                6  0.00102168
+Double       Complex   Backward     in-place     30x30x30                5  0.00045102
+
+Total time
+       Count (#)    Time (s)
+---  -----------  ----------
+fft           11   0.0014727
 ```
-##  Array Explanations
-
-### 
-
-### FFT 
-
-- An I/O  dimension is  a triple d=(n,i,o),  where n is  a nonnegative integer called the length, i is an integer called the input stride, and o is  an  integer  called  the output  stride. ',' is used as a delimiter between element of the triple.
-- The nonnegative integer p=|t| is called the rank of I/O tensor.
-- An I/O tensor t = { d1, d2, ..., dp}  is a set of I/O dimensions. Tensor use an "x" as an delimiter between dimension.
-- FFT problems can be batched, "\*" is used as a separator between batch. In the 'Ranks' collums, each batch rank are displayed.
 
 # mkl_hook
 Wrapper  for your application. Assure that only one MPI_RANK set the `MKL_VERBOSE` enviroment.
