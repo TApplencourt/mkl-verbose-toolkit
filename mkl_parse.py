@@ -8,17 +8,22 @@ from mvt.reducer import Reducer
 from mvt.cached_property import cached_property
 import os
 
-class displayBLAS():
+class displayMKL():
+
+    @cached_property
+    def total_time(self):
+        return sum(time for *_, time in self.l)
+
+    @cached_property
+    def total_count(self):
+        return len(self.l)
+
+class displayBLAS(displayMKL):
 
     def __init__(self, l):
         self.l = l
         self.r0 = Reducer(l)
         self.r1 = Reducer(self.r0, {k: (0, 1) for k, *_ in self.r0})  
-        self.r2 = Reducer(self.r1, {k: (0, ) for k, *_ in self.r1})  
-
-    @cached_property
-    def total_time(self):
-        return sum(time for *_, time in self.l)
 
     @cached_property
     def d_mkl_name(self):
@@ -60,7 +65,7 @@ class displayBLAS():
         return [ (name, v) for name, (_, v) in zip(self.d_mkl_name[name],argv)]
 
     def display_raw(self, n):
-        headers = ['Name', 'Argv','Time (s)', '%']
+        headers = ['Name', 'Argv','Time (s)', 'lapack %']
         top_l = heapq.nlargest(n, self.l, key=lambda x: x[-1])
         top = [ (name, self.translate_argv(name,argv), time, (100*time/self.total_time)) for _, name, *argv, time in top_l]
         
@@ -72,46 +77,37 @@ class displayBLAS():
         print (tabulate(top, headers))
 
     def display_merge_argv(self, n):
-        headers = ['Name', 'Argv','Count (#)','Time (s)', '%']
+        headers = ['Name', 'Argv','Count (#)','Time (s)', 'lapack %']
         top = [ (name, self.translate_argv(name,argv), count, time, (100*time/self.total_time)) for (_, name, *argv), (count, time) in self.r0.longuest(n) ]
         time_partial = sum(time for *_, time, _ in top)
-        top.append( ('other', '', '', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) )
+        count_partial = sum(count for *_, count, _, _ in top)
+
+        top.append( ('other', '', self.total_count - count_partial, self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) )
 
         print ('')
         print (f'Top {n} function by execution time (accumulated by arguments)')
         print (tabulate(top, headers))
 
     def display_merge_name(self, n):
-        headers = ['Name','Count (#)','Time (s)', '%']
+        headers = ['Name','Count (#)','Time (s)', 'lapack %']
         top = [ (name, count, time, (100*time/self.total_time)) for (_, name), (count, time, ) in self.r1.longuest(n) ]
 
         time_partial = sum(time for *_, time, _ in top)
-        top.append( ('other', '', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) )
+        count_partial = sum(count for *_, count, _, _ in top)
+
+        top.append( ('other',  self.total_count - count_partial, self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) )
 
         print ('')
         print (f'Top {n} function by execution time (accumulated by names)')
         print (tabulate(top, headers))
     
-    def display_merge_type(self, n):
-        headers = ['','Count (#)','Time (s)']
-        top = ( (mkl_type, count, time)  for (mkl_type, ), (count, time) in self.r2.longuest(n) )
-        print ('')
-        print ('Total time')
-        print (tabulate(top, headers))
-
-class displayFFT():
+class displayFFT(displayMKL):
 
     def __init__(self, l):
         self.l = l
         self.r0 = Reducer(l)
-        self.r2 = Reducer(self.r0, {k: (0, ) for k, *_ in self.r0})  
-
-    @cached_property
-    def total_time(self):
-        return sum(time for *_, time in self.l)
 
     def display_raw(self, n):
-        # The last element of l is the time
         top = heapq.nlargest(n, self.l, key=lambda x: x[-1])
         top_one_collumn = [ (*argv, time, (100*time/self.total_time)) for _, *argv, time in top]
         headers = ['precision','domain','direction','placement','dimensions','Time (s)', '%']
@@ -126,39 +122,28 @@ class displayFFT():
         print (f'Top {n} FFT call  by execution time (accumulated)')
         print (tabulate(top, headers))
 
-    def display_merge_type(self, n):
-        headers = ['','Count (#)','Time (s)']
-        top = ( (mkl_type, count, time) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
-        print ('')
-        print ('Total time')
-        print (tabulate(top, headers))
-
-
 def regex_iter(f: TextIO) -> Iterator[ Tuple[Match,Match] ]:
    regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
-   re_mkl = re.compile(regex)
+   re_mkl = re.compile(regex, re.MULTILINE)
 
    regex = r"(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx]*)"
    re_fft = re.compile(regex)
 
    d_rosetta_time = {'ns':1.e-9, 'us':1.e-6, 'ms':1.e-3, 's': 1}
-
+   
    for line in f:
-        
-        m = re_mkl.search(line)
-        if not m:
-            continue
+        for match in re_mkl.finditer(line):
+    
+            d_match = match.groupdict()
+            t = float(d_match['time']) * d_rosetta_time[d_match['exp']]
+            if t < 1E-6:
+                continue
 
-        d_match = m.groupdict()
-        t = float(d_match['time']) * d_rosetta_time[d_match['exp']]
-        if t < 1E-6:
-            continue
-
-        if d_match['name'] != 'FFT':
-            yield "lapack", parse_lapack(d_match,t)
-        else:
-            d_match.update(re_fft.search(d_match['args']).groupdict())
-            yield "fft", parse_fft(d_match,t)
+            if d_match['name'] != 'FFT':
+                yield "lapack", parse_lapack(d_match,t)
+            else:
+                d_match.update(re_fft.search(d_match['args']).groupdict())
+                yield "fft", parse_fft(d_match,t)
 
 d_rosetta_fft = {'s': "Single",
                 'd': "Double",
@@ -192,22 +177,29 @@ def parse_file(f):
         elif type_ is "fft":
             l_fft.append(line)
 
+    db = displayBLAS(l_lapack)
+    df = displayFFT(l_fft)
+
+    print ('~= SUMMARY ~=')
+
+    headers = ['','Count (#)','Time (s)']
+    top =  [ ('BLAS / LAPACK', db.total_count, db.total_time),
+             ('FFT', df.total_count, df.total_time) ]
+    print (tabulate(top, headers))
+    print ('')
 
     if l_lapack:
-        print ('~= BLAS / LAPCK ~=')
-        db = displayBLAS(l_lapack)
-        db.display_raw(10)
-        db.display_merge_argv(10)
+        print ('~= BLAS / LAPACK ~=')
         db.display_merge_name(10)
-        db.display_merge_type(10)
+        db.display_merge_argv(10)
+        db.display_raw(10)
 
     print ('')
     if l_fft:
         print ('~= FFT ~=')
-        df = displayFFT(l_fft)
-        df.display_raw(10)
         df.display_merge_argv(10)
-        df.display_merge_type(10)
+        df.display_raw(10)
+
 if __name__ == '__main__':
     import argparse
     import sys
