@@ -60,31 +60,41 @@ class displayBLAS():
         return [ (name, v) for name, (_, v) in zip(self.d_mkl_name[name],argv)]
 
     def display_raw(self, n):
-        # The last element of l is the time
-        top = heapq.nlargest(n, self.l, key=lambda x: x[-1])
-        top_one_collumn = [ (name, self.translate_argv(name,argv), time, (100*time/self.total_time)) for _, name, *argv, time in top]
         headers = ['Name', 'Argv','Time (s)', '%']
+        top_l = heapq.nlargest(n, self.l, key=lambda x: x[-1])
+        top = [ (name, self.translate_argv(name,argv), time, (100*time/self.total_time)) for _, name, *argv, time in top_l]
+        
+        time_partial = sum(time for *_, time, _ in top)
+        top.append( ('other', '', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) ) 
+
         print ('')
         print (f'Top {n} function by execution time')
-        print (tabulate(top_one_collumn, headers))
+        print (tabulate(top, headers))
 
     def display_merge_argv(self, n):
         headers = ['Name', 'Argv','Count (#)','Time (s)', '%']
-        top = ( (name, self.translate_argv(name,argv), count, time, (100*time/self.total_time)) for (_, name, *argv), (count, time) in self.r0.longuest(n) )
+        top = [ (name, self.translate_argv(name,argv), count, time, (100*time/self.total_time)) for (_, name, *argv), (count, time) in self.r0.longuest(n) ]
+        time_partial = sum(time for *_, time, _ in top)
+        top.append( ('other', '', '', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) )
+
         print ('')
         print (f'Top {n} function by execution time (accumulated by arguments)')
         print (tabulate(top, headers))
 
     def display_merge_name(self, n):
         headers = ['Name','Count (#)','Time (s)', '%']
-        top = ( (name, count, time, (100*time/self.total_time)) for (_, name), (count, time, ) in self.r1.longuest(n) )
+        top = [ (name, count, time, (100*time/self.total_time)) for (_, name), (count, time, ) in self.r1.longuest(n) ]
+
+        time_partial = sum(time for *_, time, _ in top)
+        top.append( ('other', '', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) )
+
         print ('')
         print (f'Top {n} function by execution time (accumulated by names)')
         print (tabulate(top, headers))
     
     def display_merge_type(self, n):
-        headers = ['','Count (#)','Time (s)', '%']
-        top = ( (mkl_type, count, time, (100*time/self.total_time)) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
+        headers = ['','Count (#)','Time (s)']
+        top = ( (mkl_type, count, time)  for (mkl_type, ), (count, time) in self.r2.longuest(n) )
         print ('')
         print ('Total time')
         print (tabulate(top, headers))
@@ -117,8 +127,8 @@ class displayFFT():
         print (tabulate(top, headers))
 
     def display_merge_type(self, n):
-        headers = ['','Count (#)','Time (s)', '%']
-        top = ( (mkl_type, count, time, (100*time/self.total_time)) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
+        headers = ['','Count (#)','Time (s)']
+        top = ( (mkl_type, count, time) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
         print ('')
         print ('Total time')
         print (tabulate(top, headers))
@@ -200,6 +210,7 @@ def parse_file(f):
         df.display_merge_type(10)
 if __name__ == '__main__':
     import argparse
+    import sys
 
     parser = argparse.ArgumentParser(description='Generate a summary for "MKL_verbosed" log files. $MKLROOT will be used to match MKL arguments name with respective values.')
     parser.add_argument('filename', nargs='?', help='If filename is not provided, std.in will be used')
@@ -213,10 +224,3 @@ if __name__ == '__main__':
         sys.exit()
 
     parse_file(f)
-
-'''
- __
-(_      ._ _  ._ _   _. ._
-__) |_| | | | | | | (_| |  \/
-                           /
-'''
