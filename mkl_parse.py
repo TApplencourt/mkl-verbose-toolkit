@@ -17,6 +17,10 @@ class displayBLAS():
         self.r2 = Reducer(self.r1, {k: (0, ) for k, *_ in self.r1})  
 
     @cached_property
+    def total_time(self):
+        return sum(time for *_, time in self.l)
+
+    @cached_property
     def d_mkl_name(self):
 
         d_index_keep = self.d_index_keep   
@@ -40,7 +44,7 @@ class displayBLAS():
 
         # Default values for argv not find
         for name in set(d_index_keep) - set(d_mkl_name):
-              d_mkl_name[name] = [ f'No{i}' for i in d_index_keep[name] ]
+              d_mkl_name[name] = [ f'id:{i}' for i in d_index_keep[name] ]
 
         return d_mkl_name
 
@@ -58,29 +62,29 @@ class displayBLAS():
     def display_raw(self, n):
         # The last element of l is the time
         top = heapq.nlargest(n, self.l, key=lambda x: x[-1])
-        top_one_collumn = [ (name, self.translate_argv(name,argv), time) for _, name, *argv, time in top]
-        headers = ['Name', 'Argv','Time (s)']
+        top_one_collumn = [ (name, self.translate_argv(name,argv), time, (100*time/self.total_time)) for _, name, *argv, time in top]
+        headers = ['Name', 'Argv','Time (s)', '%']
         print ('')
         print (f'Top {n} function by execution time')
         print (tabulate(top_one_collumn, headers))
 
     def display_merge_argv(self, n):
-        headers = ['Name', 'Argv','Count (#)','Time (s)']
-        top = ( (name, self.translate_argv(name,argv), count, time) for (_, name, *argv), (count, time) in self.r0.longuest(n) )
+        headers = ['Name', 'Argv','Count (#)','Time (s)', '%']
+        top = ( (name, self.translate_argv(name,argv), count, time, (100*time/self.total_time)) for (_, name, *argv), (count, time) in self.r0.longuest(n) )
         print ('')
         print (f'Top {n} function by execution time (accumulated by arguments)')
         print (tabulate(top, headers))
 
     def display_merge_name(self, n):
-        headers = ['Name','Count (#)','Time (s)']
-        top = ( (name, count, time) for (_, name), (count, time) in self.r1.longuest(n) )
+        headers = ['Name','Count (#)','Time (s)', '%']
+        top = ( (name, count, time, (100*time/self.total_time)) for (_, name), (count, time, ) in self.r1.longuest(n) )
         print ('')
         print (f'Top {n} function by execution time (accumulated by names)')
         print (tabulate(top, headers))
     
     def display_merge_type(self, n):
-        headers = ['','Count (#)','Time (s)']
-        top = ( (mkl_type, count, time) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
+        headers = ['','Count (#)','Time (s)', '%']
+        top = ( (mkl_type, count, time, (100*time/self.total_time)) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
         print ('')
         print ('Total time')
         print (tabulate(top, headers))
@@ -92,26 +96,29 @@ class displayFFT():
         self.r0 = Reducer(l)
         self.r2 = Reducer(self.r0, {k: (0, ) for k, *_ in self.r0})  
 
+    @cached_property
+    def total_time(self):
+        return sum(time for *_, time in self.l)
 
     def display_raw(self, n):
         # The last element of l is the time
         top = heapq.nlargest(n, self.l, key=lambda x: x[-1])
-        top_one_collumn = [ (*argv, time) for _, *argv, time in top]
-        headers = ['precision','domain','direction','placement','dimensions','Time (s)']
+        top_one_collumn = [ (*argv, time, (100*time/self.total_time)) for _, *argv, time in top]
+        headers = ['precision','domain','direction','placement','dimensions','Time (s)', '%']
         print ('')
         print (f'Top {n} FFT call by execution time')
         print (tabulate(top_one_collumn, headers))
 
     def display_merge_argv(self, n):
-        headers = ['precision','domain','direction','placement','dimensions', 'Count (#)','Time (s)']
-        top = ( (*argv, count, time) for (_, *argv), (count, time) in self.r0.longuest(n) )
+        headers = ['precision','domain','direction','placement','dimensions', 'Count (#)','Time (s)', '%']
+        top = ( (*argv, count, time, (100*time/self.total_time)) for (_, *argv), (count, time) in self.r0.longuest(n) )
         print ('')
         print (f'Top {n} FFT call  by execution time (accumulated)')
         print (tabulate(top, headers))
 
     def display_merge_type(self, n):
-        headers = ['','Count (#)','Time (s)']
-        top = ( (mkl_type, count, time) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
+        headers = ['','Count (#)','Time (s)', '%']
+        top = ( (mkl_type, count, time, (100*time/self.total_time)) for (mkl_type, ), (count, time) in self.r2.longuest(n) )
         print ('')
         print ('Total time')
         print (tabulate(top, headers))
