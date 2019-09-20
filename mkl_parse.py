@@ -18,6 +18,7 @@ class displayMKL():
     def total_count(self):
         return len(self.l)
 
+
 class displayBLAS(displayMKL):
 
     def __init__(self, l):
@@ -26,58 +27,88 @@ class displayBLAS(displayMKL):
         self.r1 = Reducer(self.r0, {k: (0, 1) for k, *_ in self.r0})  
 
     @cached_property
-    def d_mkl_name(self):
+    def d_index_keep(self):
+        """
+        For each LAPCAK/BLAS call, return a index argument who are not pointer.
+        """
+        d_index_keep = {}
+        for _, name, *l_argv, _ in self.l:
+            if name not in d_index_keep:
+                d_index_keep[name] = [i for i, _ in l_argv]
+        return d_index_keep
 
+
+    @cached_property
+    def d_mkl_name(self):
+        """Return for each LAPCAK/BLAS the name of the arguments.
+
+        For performance raison and readability raison, we will return 
+            - only the BLAS call used by the program,
+            - only the arguments who are not pointer     
+
+        We will try to parse MKL header file to get meanings full argmuments name,
+        if not we will return the index of the arguments
+
+        Without MKL_ROOT:
+            'DGETRI': ['id:0', 'id:2', 'id:5', 'id:6']
+        With MKL_ROOT:
+
+        """ 
+
+        # Default dict
         d_index_keep = self.d_index_keep   
+        d_mkl_name = { name: list(map(lambda i: f'id:{i}',l_index)) for name, l_index in d_index_keep.items()}
+
 
         mkl_path = os.getenv("MKLROOT")
+        if not mkl_path:
+            return d_mkl_name
 
-        if mkl_path:
-            l_path = (f"{mkl_path}/include/mkl_lapack.h", f"{mkl_path}/include/mkl_blas.h")
-            regex = r"(?P<name>%s)\s*\((?P<arg>.*?)\);" % '|'.join(map(re.escape,d_index_keep))
-            prog = re.compile(regex, re.MULTILINE | re.DOTALL)
-        else:
-            l_path = ()
+        # We will parse header file and get the argument name for each BLASK call we do
 
-        d_mkl_name = dict()
-        for path in l_path:
+        """
+        BLAS header look like:
+        void zlarot_( const MKL_INT* lrows, const MKL_INT* lleft,
+              const MKL_INT* lright, const MKL_INT* nl,
+              const MKL_Complex16* c, const MKL_Complex16* s,
+              MKL_Complex16* a, const MKL_INT* lda, MKL_Complex16* xleft,
+              MKL_Complex16* xright );
+        """
+        regex = r"(?P<name>%s)\s*\((?P<arg>.*?)\);" % '|'.join(map(re.escape,d_mkl_name))
+        prog = re.compile(regex, re.MULTILINE | re.DOTALL)
+
+
+        for path in (f"{mkl_path}/include/mkl_lapack.h", f"{mkl_path}/include/mkl_blas.h"):
             with open(path, 'r') as f:
                 for match in prog.finditer(f.read()):
                     name, argv = match.groups()
-                    l_name = [arg.split('*').pop().strip() for arg in argv.split(',') ]
-                    d_mkl_name[name] = [l_name[i] for i in d_index_keep[name] ]
+                    l_argv_name = argv.split(',')
 
-        # Default values for argv not find
-        for name in set(d_index_keep) - set(d_mkl_name):
-              d_mkl_name[name] = [ f'id:{i}' for i in d_index_keep[name] ]
+                    def parse_index_name(i):
+                        """The i-th argument name will be the last of the line"""
+                        return l_argv_name[i].split().pop()
+
+                    d_mkl_name[name] = list(map(parse_index_name,d_index_keep[name]))
 
         return d_mkl_name
-
-    @cached_property
-    def d_index_keep(self):
-        d = {}
-        for _, name, *l_argv, time in self.l:
-            if name not in d:
-                d[name] = [i for i,v in l_argv]
-        return d
 
     def translate_argv(self, name, argv):
         return [ (name, v) for name, (_, v) in zip(self.d_mkl_name[name],argv)]
 
     def display_raw(self, n):
-        headers = ['Name', 'Argv','Time (s)', 'lapack %']
+        headers = ['Name', 'Argv','Time (s)', '%']
         top_l = heapq.nlargest(n, self.l, key=lambda x: x[-1])
         top = [ (name, self.translate_argv(name,argv), time, (100*time/self.total_time)) for _, name, *argv, time in top_l]
         
-        time_partial = sum(time for *_, time, _ in top)
-        top.append( ('other', '', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) ) 
+        time_partial = sum(time for *_, time in top_l)
+        top.append( ('other', ' ', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) ) 
 
         print ('')
         print (f'Top {n} function by execution time')
         print (tabulate(top, headers))
 
     def display_merge_argv(self, n):
-        headers = ['Name', 'Argv','Count (#)','Time (s)', 'lapack %']
+        headers = ['Name', 'Argv','Count (#)','Time (s)', '%']
         top = [ (name, self.translate_argv(name,argv), count, time, (100*time/self.total_time)) for (_, name, *argv), (count, time) in self.r0.longuest(n) ]
         time_partial = sum(time for *_, time, _ in top)
         count_partial = sum(count for *_, count, _, _ in top)
@@ -89,13 +120,16 @@ class displayBLAS(displayMKL):
         print (tabulate(top, headers))
 
     def display_merge_name(self, n):
-        headers = ['Name','Count (#)','Time (s)', 'lapack %']
+        headers = ['Name','Count (#)','Time (s)', '%']
         top = [ (name, count, time, (100*time/self.total_time)) for (_, name), (count, time, ) in self.r1.longuest(n) ]
 
         time_partial = sum(time for *_, time, _ in top)
         count_partial = sum(count for *_, count, _, _ in top)
 
-        top.append( ('other',  self.total_count - count_partial, self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) )
+        if self.total_count - count_partial:
+            top.append( ('other',  self.total_count - count_partial, self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) )
+        else:
+            top.append( ('other', 0, 0, 0)) 
 
         print ('')
         print (f'Top {n} function by execution time (accumulated by names)')
@@ -136,8 +170,8 @@ def regex_iter(f: TextIO) -> Iterator[ Tuple[Match,Match] ]:
     
             d_match = match.groupdict()
             t = float(d_match['time']) * d_rosetta_time[d_match['exp']]
-            if t < 1E-6:
-                continue
+            #if t < 1E-6:
+            #    continue
 
             if d_match['name'] != 'FFT':
                 yield "lapack", parse_lapack(d_match,t)
