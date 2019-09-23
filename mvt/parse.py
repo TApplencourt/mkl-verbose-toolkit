@@ -1,10 +1,5 @@
-from typing import Dict, Tuple, Generator, TextIO, Match, Iterator
-import re, heapq
-
-from tabulate import tabulate
-from mvt.reducer import Reducer
-from mvt.cached_property import cached_property
-from mvt.display import displayBLAS, displayFFT
+from typing import Dict, Tuple, TextIO, Match, Iterator
+import re
 
 d_rosetta_fft = {'s': "Single",
                 'd': "Double",

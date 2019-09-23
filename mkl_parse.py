@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-from typing import Dict, Tuple, Generator, TextIO, Match, Iterator
-import re, heapq
-
 from tabulate import tabulate
 from mvt.display import displayBLAS, displayFFT
 from mvt.parse import parse_iter
