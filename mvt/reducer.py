@@ -1,11 +1,14 @@
 from typing import Dict, Tuple, Generator, TextIO, Match, Iterator, List, Iterable, Mapping
+from functools import lru_cache
 import heapq
 
-Weight, Count = float, int
+Sum, Count = float, int
 
 class Reducer(dict):
 
     def __init__(self, iter_, dict_index = {}):
+        # Just and to save the count and sum
+
         '''
         >>> Reducer([('a','b',1.),
         ...          ('a','b',4.), 
@@ -25,23 +28,37 @@ class Reducer(dict):
             l_index =  dict_index.get(elems[idx_master_key], range(len(elems))) 
             return tuple(elems[i] for i in l_index)
 
-        def parse(iter_: Iterable) ->  Iterator[Tuple[Weight, Count] ]:
+        def parse(iter_: Iterable) ->  Iterator[Tuple[Sum, Count] ]:
             '''
-            Generate the key, the count, and the weight of the current line
+            Generate the key, the count, and the Sum of the current line
             '''
             if isinstance(iter_, Mapping):
-                for elems, (count, weight) in iter_.items():
-                    yield filter_e(elems), count, weight
+                for elems, (count, sum_) in iter_.items():
+                    yield filter_e(elems), count, sum_
             elif isinstance(iter_,Iterable):
-                for *elems, weight in iter_:
-                    yield filter_e(elems), 1, weight
+                for *elems, sum_ in iter_:
+                    yield filter_e(elems), 1, sum_
 
-        default_count, default_weigh = (0,0)
+        default_count, default_sum_ = (0,0)
 
-        for trimed_elem, count, weight in parse(iter_):        
-            cur_count, cur_weight = self.get(trimed_elem, (default_count,default_weigh)) 
-            self[trimed_elem] = (cur_count + count, cur_weight + weight)
+        for trimed_elem, count, sum_ in parse(iter_):        
+            cur_count, cur_sum = self.get(trimed_elem, (default_count,default_sum_)) 
+            self[trimed_elem] = (cur_count + count, cur_sum + sum_)
 
+    def __hash__(self):
+        return hash(frozenset(self))
+
+    @lru_cache()
+    def partial_time(self,n):
+        top = self.longuest(n)   
+        return sum(time for _, (_, time) in top)
+
+    @lru_cache()
+    def partial_count(self,n):
+        top = self.longuest(n)        
+        return sum(count for _, (count, _) in top)
+
+    @lru_cache()
     def longuest(self,n) -> List[Tuple]:
         return heapq.nlargest(n, self.items(), key=lambda x: x[1][1])
 
