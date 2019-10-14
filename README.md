@@ -35,15 +35,18 @@ conda install --file requirements.txt
 ```
 ## Usage
 ```
-usage: mkl_parse.py [-h] [filename]
+usage: mkl_parse.py [-h] [-n #] [filename]
 
-Generate a summary for "MKL_verbosed" log files
+Generate a summary for "MKL_verbosed" log files. $MKLROOT will be used to
+match MKL arguments name with respective values.
 
 positional arguments:
-  filename    If filename not provided, std.in will be used
+  filename              If filename is not provided, std.in will be used
 
 optional arguments:
-  -h, --help  show this help message and exit
+  -h, --help            show this help message and exit
+  -n #, --num_routines #
+                        The number of routines to print out
 ```
 
 
@@ -70,76 +73,49 @@ MKL_VERBOSE DGESVD(S,S,45,45,0x3decc70,45,0x3d4eb30,0x3df0bc0,45,0x3ef4cf0,45,0x
 MKL_VERBOSE DGETRF(3072,3072,0x7fddf19e9010,3072,0x333da80,0) 376.01ms CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:1 WDiv:HOST:+0.000
 ...
 
->> cat log.out | ./mkl_parse.py
-~= BLAS / LAPCK ~=
+>> cat tests/mkl_verbose.raw.log | ./mkl_parse.py -n 2
+~= SUMMARY ~=
+                 Count (#)    Time (s)
+-------------  -----------  ----------
+BLAS / LAPACK          295   9.91731
+FFT                     11   0.0014727
 
-Top 10 function by execution time
-Name    Argv                                                                     Time (s)
-------  ---------------------------------------------------------------------  ----------
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.52748
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.52185
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50612
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.5057
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50566
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50537
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50495
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.50494
-DGETRF  [('m', '3072'), ('n', '3072'), ('lda', '3072'), ('info', '0')]            0.38882
-DGETRF  [('m', '3072'), ('n', '3072'), ('lda', '3072'), ('info', '0')]            0.3767
+~= BLAS / LAPACK ~=
 
-Top 10 function by execution time (accumulated by arguments)
-Name    Argv                                                                                                                              Count (#)    Time (s)
-------  ------------------------------------------------------------------------------------------------------------------------------  -----------  ----------
-DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]                                                                     8     4.08207
-DGETRF  [('m', '3072'), ('n', '3072'), ('lda', '3072'), ('info', '0')]                                                                            8     3.01759
-SGEMM   [('transa', 'T'), ('transb', 'N'), ('m', '64'), ('n', '3072'), ('k', '3072'), ('lda', '3072'), ('ldb', '3072'), ('ldc', '64')]          135     1.4472
-SGEMM   [('transa', 'N'), ('transb', 'N'), ('m', '3072'), ('n', '3072'), ('k', '64'), ('lda', '3072'), ('ldb', '64'), ('ldc', '3072')]          135     1.30396
-SGEMM   [('transa', 'T'), ('transb', 'N'), ('m', '62'), ('n', '3072'), ('k', '3072'), ('lda', '3072'), ('ldb', '3072'), ('ldc', '64')]            2     0.02539
-SGEMM   [('transa', 'N'), ('transb', 'N'), ('m', '3072'), ('n', '3072'), ('k', '62'), ('lda', '3072'), ('ldb', '64'), ('ldc', '3072')]            2     0.0198
-SGEMM   [('transa', 'T'), ('transb', 'N'), ('m', '29'), ('n', '3072'), ('k', '3072'), ('lda', '3072'), ('ldb', '3072'), ('ldc', '64')]            1     0.00629
-SGEMM   [('transa', 'T'), ('transb', 'N'), ('m', '4'), ('n', '3072'), ('k', '3072'), ('lda', '3072'), ('ldb', '3072'), ('ldc', '64')]             1     0.00611
-SGEMM   [('transa', 'N'), ('transb', 'N'), ('m', '3072'), ('n', '3072'), ('k', '29'), ('lda', '3072'), ('ldb', '64'), ('ldc', '3072')]            1     0.00422
-SGEMM   [('transa', 'N'), ('transb', 'N'), ('m', '3072'), ('n', '3072'), ('k', '4'), ('lda', '3072'), ('ldb', '64'), ('ldc', '3072')]             1     0.00329
+Top 2 function by execution time (accumulated by names)
+Name      Count (#)    Time (s)        %
+------  -----------  ----------  -------
+DGETRI            8     4.08207  41.1611
+DGETRF            8     3.01759  30.4275
+other           279     2.81765  28.4114
 
-Top 10 function by execution time (accumulated by names)
-Name      Count (#)    Time (s)
-------  -----------  ----------
-DGETRI            8     4.08207
-DGETRF            8     3.01759
-SGEMM           278     2.81626
-DGESVD            1     0.00139
+Top 2 function by execution time (accumulated by arguments)
+Name    Argv                                                                     Count (#)    Time (s)        %
+------  ---------------------------------------------------------------------  -----------  ----------  -------
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]            8     4.08207  41.1611
+DGETRF  [('m', '3072'), ('n', '3072'), ('lda', '3072'), ('info', '0')]                   8     3.01759  30.4275
+other                                                                                  279     2.81765  28.4114
 
-Total time
-          Count (#)    Time (s)
-------  -----------  ----------
-lapack          295     9.91731
+Top 2 function by execution time
+Name    Argv                                                                     Time (s)         %
+------  ---------------------------------------------------------------------  ----------  --------
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.52748   5.31878
+DGETRI  [('n', '3072'), ('lda', '3072'), ('lwork', '1179648'), ('info', '0')]     0.52185   5.26201
+other                                                                             8.86798  89.4192
 
 ~= FFT ~=
 
-Top 10 FFT call by execution time
-precision    domain    direction    placement    dimensions      Time (s)
------------  --------  -----------  -----------  ------------  ----------
-Double       Complex   Forward      in-place     30x30x30      0.00045282
-Double       Complex   Forward      in-place     30x30x30      0.00016508
-Double       Complex   Backward     in-place     30x30x30      0.00011836
-Double       Complex   Forward      in-place     30x30x30      0.00010286
-Double       Complex   Forward      in-place     30x30x30      0.00010258
-Double       Complex   Forward      in-place     30x30x30      9.921e-05
-Double       Complex   Forward      in-place     30x30x30      9.913e-05
-Double       Complex   Backward     in-place     30x30x30      8.477e-05
-Double       Complex   Backward     in-place     30x30x30      8.31e-05
-Double       Complex   Backward     in-place     30x30x30      8.3e-05
+Top 2 FFT call  by execution time (accumulated)
+precision    domain    direction    placement    dimensions      Count (#)    Time (s)        %
+-----------  --------  -----------  -----------  ------------  -----------  ----------  -------
+Double       Complex   Forward      in-place     30x30x30                6  0.00102168  69.3746
+Double       Complex   Backward     in-place     30x30x30                5  0.00045102  30.6254
 
-Top 10 FFT call  by execution time (accumulated)
-precision    domain    direction    placement    dimensions      Count (#)    Time (s)
------------  --------  -----------  -----------  ------------  -----------  ----------
-Double       Complex   Forward      in-place     30x30x30                6  0.00102168
-Double       Complex   Backward     in-place     30x30x30                5  0.00045102
-
-Total time
-       Count (#)    Time (s)
----  -----------  ----------
-fft           11   0.0014727
+Top 2 FFT call by execution time
+precision    domain    direction    placement    dimensions      Time (s)        %
+-----------  --------  -----------  -----------  ------------  ----------  -------
+Double       Complex   Forward      in-place     30x30x30      0.00045282  30.7476
+Double       Complex   Forward      in-place     30x30x30      0.00016508  11.2093
 ```
 
 # mkl_hook
