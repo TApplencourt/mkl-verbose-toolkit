@@ -4,7 +4,7 @@ from tabulate import tabulate
 from mvt.display import displayBLAS, displayFFT
 from mvt.parse import parse_iter
 
-def parse_and_display(f):
+def parse_and_display(f,count):
 
     l_fft = []
     l_lapack = []
@@ -28,15 +28,15 @@ def parse_and_display(f):
 
     if l_lapack:
         print ('~= BLAS / LAPACK ~=')
-        db.display_merge_name(10)
-        db.display_merge_argv(10)
-        db.display_raw(10)
+        db.display_merge_name(count)
+        db.display_merge_argv(count)
+        db.display_raw(count)
 
     print ('')
     if l_fft:
         print ('~= FFT ~=')
-        df.display_merge_argv(10)
-        df.display_raw(10)
+        df.display_merge_argv(count)
+        df.display_raw(count)
 
 if __name__ == '__main__':
     import argparse
@@ -44,6 +44,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Generate a summary for "MKL_verbosed" log files. $MKLROOT will be used to match MKL arguments name with respective values.')
     parser.add_argument('filename', nargs='?', help='If filename is not provided, std.in will be used')
+    parser.add_argument("-n", "--num_routines", metavar="#",
+                        help="The number of routines to print out", type=int, default=10)
+
     args = parser.parse_args()
     if args.filename:
         f = open(args.filename, 'r')
@@ -53,4 +56,4 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit()
 
-    parse_and_display(f)
+    parse_and_display(f, args.num_routines)

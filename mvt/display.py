@@ -70,7 +70,7 @@ class displayBLAS(displayMKL):
         With MKL_ROOT:
 
         """ 
-
+        import re
         # Default dict
         d_index_keep = self.d_index_keep   
         d_mkl_name = { name: tuple(map(lambda i: f'id:{i}',l_index)) for name, l_index in d_index_keep.items() }
