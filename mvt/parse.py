@@ -40,11 +40,12 @@ def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
             continue
          
         name, arguments = name_argument[:-1].split('(')
+
         if name != 'FFT':
-            l_arguments =  ( (i,arg) for i,arg in enumerate(arguments.split(',')) if not arg.startswith('0x') )
+            l_arguments =  [ (i,arg) for i,arg in enumerate(arguments.split(',')) if not arg.startswith('0x') ]
             yield "lapack", [ name, *l_arguments, time ] 
         else:
-            # TODO handle other argument
+            # TODO handle other argument. tlim?
             d = re.match("(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx]*)",arguments).groupdict()
             l_arguments = (d_rosetta_fft[d[name]] for name in ('precision','domain','direction','placement'))
-            yield "fft", [ *l_arguments,  time] 
+            yield "fft", [ *l_arguments, d['dimensions'],  time] 

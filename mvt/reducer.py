@@ -7,7 +7,7 @@ Sum, Count = float, int
 class Reducer(dict):
 
     def __init__(self, iter_, dict_index = {}):
-        # Just and to save the count and sum
+        # Save the count and sum
 
         '''
         >>> Reducer([('a','b',1.),
@@ -49,6 +49,10 @@ class Reducer(dict):
         return hash(frozenset(self))
 
     @lru_cache()
+    def longuest(self,n) -> List[Tuple]:
+        return heapq.nlargest(n, self.items(), key=lambda x: x[1][1])
+
+    @lru_cache()
     def partial_time(self,n):
         top = self.longuest(n)   
         return sum(time for _, (_, time) in top)
@@ -57,9 +61,5 @@ class Reducer(dict):
     def partial_count(self,n):
         top = self.longuest(n)        
         return sum(count for _, (count, _) in top)
-
-    @lru_cache()
-    def longuest(self,n) -> List[Tuple]:
-        return heapq.nlargest(n, self.items(), key=lambda x: x[1][1])
 
 
