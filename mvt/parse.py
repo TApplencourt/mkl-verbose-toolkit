@@ -23,11 +23,10 @@ def parse_lapack(d_match: Dict, t):
 
 
 def parse_iter(f: TextIO) -> Iterator[ Tuple[Match,Match] ]:
-    #regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
-    # Some specific version of MKL doesn't have the clossing parentheses in the list of arguments, this explan the \)?  in <args>
-    regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>[\w,]*)\)? +?(?P<time>\S+?)(?P<exp>[a-z]+)"
-
-    re_mkl = re.compile(regex, re.MULTILINE)
+   #regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
+   # Some specific version of MKL doesn't have the clossing parentheses in the list of arguments, this explan the \)?  in <args>
+   regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>[\w,]*)\)? (?P<time>\S+?)(?P<exp>[a-z]+)"
+   re_mkl = re.compile(regex, re.MULTILINE)
 
    regex = r"(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx]*)"
    re_fft = re.compile(regex)
