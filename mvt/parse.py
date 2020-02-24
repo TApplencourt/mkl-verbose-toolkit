@@ -1,7 +1,17 @@
 from typing import Dict, Tuple, TextIO, Match, Iterator
 import re
+import logging
+from functools import lru_cache
 
-d_rosetta_fft = {'s': "Single",
+@lru_cache()
+def stringtosecond(s: str) -> float:
+    d_rosetta_time = {'ns':1.e-9, 'us':1.e-6, 'ms':1.e-3, 's': 1}
+    value, exposant = re.match(r"([\.\d]+)(.*)", s).groups() 
+    return float(value)*d_rosetta_time[exposant]
+
+def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
+
+   d_rosetta_fft = {'s': "Single",
                 'd': "Double",
                 'c': "Complex",
                 'r': "Real",
@@ -10,43 +20,31 @@ d_rosetta_fft = {'s': "Single",
                 'i': "in-place",
                 'o': "out-of-place"}
 
-def parse_fft(d_match: Dict, t):
-    i = (d_rosetta_fft[d_match[name]] for name in ('precision','domain','direction','placement'))
-    return tuple([*i, d_match['dimensions'], t])
+   for i,line in enumerate(f):
+        if not line.startswith("MKL_VERBOSE"):
+            continue
+         
+        _, name_argument, time, *_ = line.split()
+        if name_argument == 'Intel(R)':
+            continue
 
-def parse_lapack(d_match: Dict, t):
+        time = stringtosecond(time)
+        if time < time_thr:
+            continue
 
-    def parse_lapack_argv(l_args):
-        return ( (i,arg) for i, arg in enumerate(l_args.split(',')) if not arg.startswith('0x') )
-
-    return tuple([d_match['name'], *parse_lapack_argv(d_match['args']), t ])
-
-
-def parse_iter(f: TextIO) -> Iterator[ Tuple[Match,Match] ]:
-   #regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
-   # Some specific version of MKL doesn't have the clossing parentheses in the list of arguments.
-   # this explain the lazy evaluation of the wildcard and last parenthsis in the <args> "  in <args>
-   regex = "^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*?)\)? (?P<time>\S+?)(?P<exp>[a-z]+)"
-   re_mkl = re.compile(regex, re.MULTILINE)
-
-   regex = r"(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx]*)"
-   re_fft = re.compile(regex)
-
-   d_rosetta_time = {'ns':1.e-9, 'us':1.e-6, 'ms':1.e-3, 's': 1}
-   
-   for line in f:
-        for match in re_mkl.finditer(line):
-    
-            d_match = match.groupdict()
-            t = float(d_match['time']) * d_rosetta_time[d_match['exp']]
-            #if t < 1E-6:
-            #    continue
-
-            if d_match['name'] != 'FFT':
-                yield "lapack", parse_lapack(d_match,t)
-            else:
-                d_match.update(re_fft.search(d_match['args']).groupdict())
-                yield "fft", parse_fft(d_match,t)
-
-
-
+        # Name arguments should be on the form NAME(arguments1,arguments2,...)
+        try:
+            assert (name_argument.count('(') == name_argument.count(')') )
+        except AssertionError:
+            logging.error(f'Cannot parse line {i}: {line.strip()}. Missing a closing parenthesis')
+            continue
+         
+        name, arguments = name_argument[:-1].split('(')
+        if name != 'FFT':
+            l_arguments =  ( (i,arg) for i,arg in enumerate(arguments.split(',')) if not arg.startswith('0x') )
+            yield "lapack", [ name, *l_arguments, time ] 
+        else:
+            # TODO handle other argument
+            d = re.match("(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx]*)",arguments).groupdict()
+            l_arguments = (d_rosetta_fft[d[name]] for name in ('precision','domain','direction','placement'))
+            yield "fft", [ *l_arguments,  time] 
