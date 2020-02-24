@@ -24,7 +24,8 @@ def parse_lapack(d_match: Dict, t):
 
 def parse_iter(f: TextIO) -> Iterator[ Tuple[Match,Match] ]:
    #regex = r"^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*)\) (?P<time>\S+?)(?P<exp>[a-z]+)"
-   # Some specific version of MKL doesn't have the clossing parentheses in the list of arguments, this explan the \)?  in <args>
+   # Some specific version of MKL doesn't have the clossing parentheses in the list of arguments.
+   # this explain the lazy evaluation of the wildcard and last parenthsis in the <args> "  in <args>
    regex = "^MKL_VERBOSE (?!Intel)(?P<name>\w+?)\((?P<args>.*?)\)? (?P<time>\S+?)(?P<exp>[a-z]+)"
    re_mkl = re.compile(regex, re.MULTILINE)
 
