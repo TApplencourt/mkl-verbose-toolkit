@@ -23,12 +23,24 @@ def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
    for i,line in enumerate(f):
         if not line.startswith("MKL_VERBOSE"):
             continue
-         
-        _, name_argument, time, *_ = line.split()
+        
+        #print (line)
+        try:
+             _, name_argument, time, *_ = line.split()
+        except ValueError:
+            logging.error(f'Cannot parse line {i}: {line.strip()}. Not a valide MKL_VERBOSE line')
+            continue
+
+
         if name_argument == 'Intel(R)':
             continue
 
-        time = stringtosecond(time)
+        try:
+            time = stringtosecond(time)
+        except (AttributeError, KeyError):
+            logging.error(f'Cannot parse line {i}: {line.strip()}.')
+            continue
+
         if time < time_thr:
             continue
 
