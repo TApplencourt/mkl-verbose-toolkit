@@ -34,19 +34,28 @@ class Reducer(dict):
             '''
             if isinstance(iter_, Mapping):
                 for elems, (count, sum_) in iter_.items():
-                    yield filter_e(elems), count, sum_
+                    yield filter_e(elems), count, sum_, elems
             elif isinstance(iter_,Iterable):
                 for *elems, sum_ in iter_:
-                    yield filter_e(elems), 1, sum_
+                    yield filter_e(elems), 1, sum_, elems
 
         default_count, default_sum_ = (0,0)
 
-        for trimed_elem, count, sum_ in parse(iter_):        
+        self.h = []
+
+        for trimed_elem, count, sum_, elems in parse(iter_):        
             cur_count, cur_sum = self.get(trimed_elem, (default_count,default_sum_)) 
             self[trimed_elem] = (cur_count + count, cur_sum + sum_)
+           
+            f = heapq.heappush if len(self.h) < 10 else heapq.heapreplace
+            f(self.h, (sum_, (*elems, sum_) ) )
 
     def __hash__(self):
         return hash(frozenset(self))
+    
+    @property
+    def n_largest(self):
+        return [ v for _,v in reversed(self.h) ]
 
     @lru_cache()
     def longuest(self,n) -> List[Tuple]:

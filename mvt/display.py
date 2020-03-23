@@ -7,6 +7,8 @@ from tabulate import tabulate
 from mvt.reducer import Reducer
 from mvt.cached_property import cached_property
 import os
+from itertools import tee
+import textwrap
 
 class displayMKL(object):
 
@@ -36,8 +38,7 @@ class displayMKL(object):
         return sum(count for count,_ in self.r1_.values())
 
     def nlongest(self, n):
-        return heapq.nlargest(n, self.l_, key=lambda x: x[-1])
-
+        return self.r0_.n_largest
 
 
 class displayBLAS(displayMKL):
@@ -118,10 +119,7 @@ class displayBLAS(displayMKL):
         
         time_partial = sum(time for *_, time in top_l)
         top.append( ('other', ' ', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) ) 
-
-        print ('')
-        print (f'Top {n} function by execution time')
-        print (tabulate(top, headers))
+        return f"\nTop {n} function by execution time\n" + tabulate(top, headers)
 
 
     def peeling_data(self,r,n):
@@ -137,32 +135,23 @@ class displayBLAS(displayMKL):
         headers = ['Name', 'Argv','Count (#)','Time (s)', '%']
         top = [ (name, self.translate_argv(name,argv), count, time, (100*time/self.total_time)) for (name, *argv), (count, time) in self.r0_.longuest(n) ]
         top.append( ('other', '',  *self.peeling_data(self.r0_,n) ) )
-
-        print ('')
-        print (f'Top {n} function by execution time (accumulated by arguments)')
-        print (tabulate(top, headers))
-
+        return f"\nTop {n} function by execution time (accumulated by arguments)\n" + tabulate(top, headers)
+    
     def display_merge_name(self, n):
         headers = ['Name','Count (#)','Time (s)', '%']
         top = [ (name, count, time, (100*time/self.total_time)) for (name, ), (count, time) in self.r1_.longuest(n) ]
         top.append( ('other',  *self.peeling_data(self.r1_,n) ) )
-
-        print ('')
-        print (f'Top {n} function by execution time (accumulated by names)')
-        print (tabulate(top, headers))
+        return f"\nTop {n} function by execution time (accumulated by names)\n" + tabulate(top, headers)
     
 class displayFFT(displayMKL):
 
     def display_raw(self, n):
-        top_one_collumn = [ (*argv, time, (100*time/self.total_time)) for *argv, time in self.nlongest(n)]
+        top = [ (*argv, time, (100*time/self.total_time)) for *argv, time in self.nlongest(n)]
         headers = ['precision','domain','direction','placement','dimensions','Time (s)', '%']
-        print ('')
-        print (f'Top {n} FFT call by execution time')
-        print (tabulate(top_one_collumn, headers))
+        return f"\nFFT call by execution time\n" + tabulate(top, headers)
 
     def display_merge_argv(self, n):
         headers = ['precision','domain','direction','placement','dimensions', 'Count (#)','Time (s)', '%']
         top = ( (*argv, count, time, (100*time/self.total_time)) for argv, (count, time) in self.r0_.longuest(n) )
-        print ('')
-        print (f'Top {n} FFT call  by execution time (accumulated)')
-        print (tabulate(top, headers))
+        return f"\nTop {n} FFT call  by execution time (accumulated)\n" + tabulate(top, headers)
+
