@@ -4,6 +4,7 @@ from tabulate import tabulate
 from mvt.display import displayBLAS, displayFFT
 from mvt.parse import parse_iter
 import greenlet
+from tqdm import tqdm
 
 def mkl(it_,count):
     db = displayBLAS(line for (type_, line) in it_ if type_ is "lapack")
@@ -30,7 +31,7 @@ def max_and_sum_greenlet(it,count):
             g.switch(val)
 
     def produce():
-        for elem in parse_iter(it):
+        for elem in parse_iter(tqdm(it)):
             send(elem)
         send(STOP)
 
