@@ -89,9 +89,9 @@ class displayBLAS(displayMKL):
               const MKL_INT* lright, const MKL_INT* nl,
               const MKL_Complex16* c, const MKL_Complex16* s,
               MKL_Complex16* a, const MKL_INT* lda, MKL_Complex16* xleft,
-              MKL_Complex16* xright );
+              MKL_Complex16* xright ) NOTHROW;
         """
-        regex = r"(?P<name>%s)\s*\((?P<arg>.*?)\);" % '|'.join(map(re.escape,d_mkl_name))
+        regex = r"\b(?P<name>%s)\s*\((?P<arg>.*?)\)" % '|'.join(map(re.escape,d_mkl_name))
         prog = re.compile(regex, re.MULTILINE | re.DOTALL)
 
 
@@ -100,7 +100,6 @@ class displayBLAS(displayMKL):
                 for match in prog.finditer(f.read()):
                     name, argv = match.groups()
                     l_argv_name = argv.split(',')
-
                     def parse_index_name(i):
                         """The i-th argument name will be the last of the line"""
                         return l_argv_name[i].split().pop()

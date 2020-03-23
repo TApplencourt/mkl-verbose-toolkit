@@ -24,7 +24,6 @@ def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
         if not line.startswith("MKL_VERBOSE"):
             continue
         
-        #print (line)
         try:
              _, name_argument, time, *_ = line.split()
         except ValueError:
