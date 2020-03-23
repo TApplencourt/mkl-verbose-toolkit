@@ -102,7 +102,11 @@ class displayBLAS(displayMKL):
                     l_argv_name = argv.split(',')
                     def parse_index_name(i):
                         """The i-th argument name will be the last of the line"""
-                        return l_argv_name[i].split().pop()
+                        a = l_argv_name[i].split().pop()
+                        if a.startswith('*'):
+                            return a[1:]
+                        else:
+                            return a
 
                     d_mkl_name[name] = tuple(map(parse_index_name,d_index_keep[name]))
 
