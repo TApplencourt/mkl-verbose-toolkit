@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 from tabulate import tabulate
-from mvt.display import displayBLAS, displayFFT
+from mvt.display import BLASApothecary, FFTApothecary
 from mvt.parse import parse_iter
 import greenlet
 from tqdm import tqdm
 
 def mkl(it_,count):
-    db = displayBLAS( (line for (type_, line) in it_ if type_ is "lapack"), n=count)
+    db = BLASApothecary( (line for (type_, line) in it_ if type_ is "lapack"), n=count)
  
     return (db.total_count, 
             db.total_time,
@@ -16,7 +16,7 @@ def mkl(it_,count):
             db.display_raw() )
 
 def fft(it_,count):
-    db = displayFFT( (line for (type_, line) in it_ if type_ is "fft"), n=count)
+    db = FFTApothecary( (line for (type_, line) in it_ if type_ is "fft"), n=count)
     return (db.total_count,
             db.total_time,
             db.display_merge_argv(count),

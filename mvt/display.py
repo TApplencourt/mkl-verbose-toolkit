@@ -5,7 +5,7 @@ from mvt.reducer import Reducer
 from mvt.cached_property import cached_property
 import os
 
-class displayMKL(object):
+class MKLApothecary(object):
 
     def __init__(self, l_, n = 10):
         # ([ ('DGETRF', (0, '3072'), (1, '3072'), (3, '3072'), (5, '0'), 0.37601),
@@ -38,7 +38,7 @@ class displayMKL(object):
         return self.functions_arguments.n_largest
 
 
-class displayBLAS(displayMKL):
+class BLASApothecary(MKLApothecary):
 
     @cached_property
     def d_index_keep(self):
@@ -136,7 +136,7 @@ class displayBLAS(displayMKL):
         top.append( ('other',  *self.peeling_data(self.functions,n) ) )
         return f"\nTop {n} functions by execution time (accumulated by names)\n" + tabulate(top, headers)
     
-class displayFFT(displayMKL):
+class FFTApothecary(MKLApothecary):
 
     def display_raw(self):
         top = [ (*argv, time, (100*time/self.total_time)) for *argv, time in self.nlongest_unique_function]
