@@ -7,33 +7,25 @@ import greenlet
 from tqdm import tqdm
 
 def mkl(it_,count):
-    db = displayBLAS(line for (type_, line) in it_ if type_ is "lapack")
+    db = displayBLAS( (line for (type_, line) in it_ if type_ is "lapack"), n=count)
  
     return (db.total_count, 
             db.total_time,
             db.display_merge_name(count),
             db.display_merge_argv(count),
-            db.display_raw(count) )
+            db.display_raw() )
 
 def fft(it_,count):
-    db = displayFFT(line for (type_, line) in it_ if type_ is "fft")
+    db = displayFFT( (line for (type_, line) in it_ if type_ is "fft"), n=count)
     return (db.total_count,
             db.total_time,
             db.display_merge_argv(count),
-            db.display_raw(count) )
+            db.display_raw() )
 
-def max_and_sum_greenlet(it,count):
+def mkl_greenlet(it,count):
+    # https://morestina.net/blog/1378/parallel-iteration-in-python
+
     STOP = object()
-    consumers = None
-
-    def send(val):
-        for g in consumers:
-            g.switch(val)
-
-    def produce():
-        for elem in parse_iter(tqdm(it)):
-            send(elem)
-        send(STOP)
 
     def consume():
         g_produce = greenlet.getcurrent().parent
@@ -43,20 +35,30 @@ def max_and_sum_greenlet(it,count):
                 return
             yield val
 
-    sum_result = []
-    max_result = []
-    gmax = greenlet.greenlet(lambda: max_result.append(fft(consume(),count)))
-    gmax.switch()
-    gsum = greenlet.greenlet(lambda: sum_result.append(mkl(consume(),count)))
-    gsum.switch()
-    consumers = (gsum, gmax)
-    produce()
+    mkl_result, fft_result = [], []
+    gmkl = greenlet.greenlet(run = lambda: mkl_result.append(mkl(consume(),count)))
+    gfft = greenlet.greenlet(run = lambda: fft_result.append(fft(consume(),count)))
+    
+    consumers = (gmkl, gfft)
 
-    return sum_result[0], max_result[0]
+    # Start the greenlet
+    for g in consumers:
+        g.switch()
+
+    # Switch betwen the FFT and BLAS
+    for elem in parse_iter(tqdm(it)):
+        for g in consumers:
+            g.switch(elem)
+
+    # Signal the greenlet to stop
+    for g in consumers:
+        g.switch(STOP)
+
+    return mkl_result[0], fft_result[0]
 
 def parse_and_display(f,count):
 
-    (db_total_count, db_total_time, db_display_merge_name, db_display_merge_argv,  db_display_raw), (df_total_count, df_total_time, df_display_merge_argv, df_display_raw) = max_and_sum_greenlet(f, count) 
+    (db_total_count, db_total_time, db_display_merge_name, db_display_merge_argv,  db_display_raw), (df_total_count, df_total_time, df_display_merge_argv, df_display_raw) = mkl_greenlet(f, count) 
 
     print ('~= SUMMARY ~=')
 
