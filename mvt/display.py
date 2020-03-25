@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from tabulate import tabulate
-from mvt.reducer import Reducer
+from mvt.aggregator import Aggregator
 from mvt.cached_property import cached_property
 import os
 
@@ -17,13 +17,13 @@ class MKLApothecary(object):
     def functions_arguments(self):
         # { ('DGESVD', (0, 'S'), (1, 'S') ) : (2, 0.0198),
         #    ... }
-        return Reducer(self.l_, n=self.n)
+        return Aggregator(self.l_, n=self.n)
 
     @cached_property
     def functions(self):
         # { ('DGESVD' : (9, 4.234),
         #    ... }
-        return Reducer(self.functions_arguments, dict_index={k: (0, ) for k, *_ in self.functions_arguments})
+        return Aggregator(self.functions_arguments, l_index=[0])
 
     @cached_property
     def total_time(self):
@@ -34,8 +34,8 @@ class MKLApothecary(object):
         return sum(count for count,_ in self.functions.values())
 
     @cached_property
-    def nlongest_unique_function(self):
-        return self.functions_arguments.n_largest
+    def longest_functions(self):
+        return self.functions_arguments.longuest_not_aggregated
 
 
 class BLASApothecary(MKLApothecary):
@@ -109,9 +109,9 @@ class BLASApothecary(MKLApothecary):
 
     def display_raw(self):
         headers = ['Name', 'Argv','Time (s)', '%']
-        top = [ (name, self.translate_argv(name,argv), time, (100*time/self.total_time)) for name, *argv, time in self.nlongest_unique_function]
+        top = [ (name, self.translate_argv(name,argv), time, (100*time/self.total_time)) for time,name, *argv in self.longest_functions]
         
-        time_partial = sum(time for *_, time in self.nlongest_unique_function)
+        time_partial = sum(time for time, *_ in self.longest_functions)
         top.append( ('other', ' ', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) ) 
         return f"\nTop {self.n} functions by execution time\n" + tabulate(top, headers)
 
@@ -139,7 +139,7 @@ class BLASApothecary(MKLApothecary):
 class FFTApothecary(MKLApothecary):
 
     def display_raw(self):
-        top = [ (*argv, time, (100*time/self.total_time)) for *argv, time in self.nlongest_unique_function]
+        top = [ (*argv, time, (100*time/self.total_time)) for time,*argv in self.longest_functions]
         headers = ['precision','domain','direction','placement','dimensions','Time (s)', '%']
         return f"\nTop {self.n} FFT calls by execution time\n" + tabulate(top, headers)
 
