@@ -3,9 +3,18 @@ import re
 import logging
 
 def stringtosecond(s: str) -> float:
-    d_rosetta_time = {'ns':1.e-9, 'us':1.e-6, 'ms':1.e-3, 's': 1}
-    value, exposant = re.match(r"([\.\d]+)(.*)", s).groups() 
-    return float(value)*d_rosetta_time[exposant]
+    # Bottle neck of the code
+    # This is a "seconde"
+    if s[-2].isdigit():
+        return float(s[:-1])
+    elif s[-2:] == 'ns':
+        return float(s[:-2]) * 1.e-9
+    elif s[-2:] == 'us':
+        return float(s[:-2]) * 1.e-6
+    elif s[-2:] == 'ms':
+        return float(s[:-2]) * 1.e-3
+    else:
+        raise ValueError
 
 def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
 
@@ -34,7 +43,7 @@ def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
 
         try:
             time = stringtosecond(time)
-        except (AttributeError, KeyError):
+        except (AttributeError, KeyError, ValueError):
             logging.error(f'Cannot parse line {i}: {line.strip()}.')
             continue
 

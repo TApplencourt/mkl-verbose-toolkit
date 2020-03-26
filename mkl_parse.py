@@ -44,7 +44,7 @@ def mkl_greenlet(it,count):
         g.switch()
 
     # Switch betwen the FFT and BLAS
-    for elem in parse_iter(tqdm(it)):
+    for elem in parse_iter(tqdm(it,unit=" line")):
         for g in consumers:
             g.switch(elem)
 
