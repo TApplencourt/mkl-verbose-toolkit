@@ -49,7 +49,8 @@ optional arguments:
                         The number of routines to print out
 ```
 
-
+Please set `$MKLROOT` to get the name of BLAS/LAPACK arguments in the summary.
+ 
 ##  Example
 ```
 >> cat log.out | wc -l
