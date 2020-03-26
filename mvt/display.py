@@ -34,11 +34,19 @@ class MKLApothecary(object):
         return sum(self.functions.values(), Stock(0,0.))
 
     def pc_time(self,time, complement=False):
-        total_time = self.total_stock.time
+
+        total_time = self.total_stock.time     
+
         if not complement:
-            return time, (100*time/total_time)
+            try:
+                return time, (100*time/total_time)
+            except ZeroDivisionError:
+                return 0, 0.
         else:
-            return total_time-time, 100 * (1 - time/total_time )
+            try:
+                return total_time-time, 100 * (1 - time/total_time )
+            except ZeroDivisionError:
+                return 0., 100
 
     @cached_property
     def total_count(self):
