@@ -2,6 +2,7 @@ from typing import Tuple, Iterator, List, Iterable, Mapping
 from functools import lru_cache
 import heapq
 from typing import NamedTuple
+from operator import itemgetter
 
 Sum, Count = float, int
 
@@ -14,18 +15,24 @@ class Stock(NamedTuple):
 
 class Aggregator(dict):
 
+    # Act as a default dict
+    def __missing__(self, key):
+        return Stock(0,0.)
+
     def __init__(self, iter_, l_index = None, n = 10):
         # Save the count and sum
 
         '''
         >>> Aggregator([('a','b',1.),
-        ...          ('a','b',4.), 
-        ...          ('a','c',3.)])
+        ...             ('a','b',4.), 
+        ...             ('a','c',3.)])
         {('a', 'b'): (2, 5.0), ('a', 'c'): (1, 3.0)}
 
-        >>> Aggregator([('a','b',1.), ('a','c',3.)], 
-        ...         {'a':(0,)})
-        {('a',): (2, 4.0)}
+        >>> Aggregator([('a','b',1.),
+        ...             ('a','b',4.), 
+        ...             ('a','c',3.)],
+                        l_index=[0]}
+        {('a',): (3, 8.0) }
         '''
 
         def parse(iter_: Iterable) ->  Iterator[Tuple[Sum, Count] ]:
@@ -46,16 +53,16 @@ class Aggregator(dict):
 
             key =  tuple(elems[i] for i in l_index) if l_index else tuple(elems)
             self[key] += stock
-
             # Take a working list of the top n
             f = heapq.heappush if len(self.longuest_not_aggregated) < n else heapq.heapreplace
             f(self.longuest_not_aggregated, (stock.time, *elems ) )
 
+        # By construction 'longuest_not_aggregated' containt the 'N' larger items. They are not sorted.
+        # To sort  in a diminishing sequence them we can use `heappop` and then reversee the list,
+        # But for simplicity we use sorted + reverse
         self.longuest_not_aggregated = sorted(self.longuest_not_aggregated, reverse=True)
 
-    def __missing__(self, key):
-        return Stock(0,0.)
-
+    # So this can be 'hashable' and sended by greenlet
     def __hash__(self):
         return hash(frozenset(self))
 
@@ -64,9 +71,6 @@ class Aggregator(dict):
         return heapq.nlargest(n, self.items(), key=lambda x: x[1].time)
 
     @lru_cache()
-    def partial_time(self,n):
-        return sum(s.time for _, s in self.longuest(n))
+    def partial_stock(self,n):
+        return sum(map(itemgetter(1),self.longuest(n)), Stock(0,0.))
 
-    @lru_cache()
-    def partial_count(self,n):
-        return sum(s.count for _, s in self.longuest(n)  )

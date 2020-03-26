@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
 
 from tabulate import tabulate
-from mvt.aggregator import Aggregator
+from mvt.aggregator import Aggregator, Stock
 from mvt.cached_property import cached_property
 import os
 
 class MKLApothecary(object):
 
-    def __init__(self, l_, n = 10):
+    def __init__(self, it, n = 10):
         # ([ ('DGETRF', (0, '3072'), (1, '3072'), (3, '3072'), (5, '0'), 0.37601),
         #    ... ]
-        self.l_ = l_
+        self.it = it
         self.n = n
 
     @cached_property
     def functions_arguments(self):
         # { ('DGESVD', (0, 'S'), (1, 'S') ) : (2, 0.0198),
         #    ... }
-        return Aggregator(self.l_, n=self.n)
+        return Aggregator(self.it, n=self.n)
+
+    @cached_property
+    def longest_functions(self):
+        return self.functions_arguments.longuest_not_aggregated
 
     @cached_property
     def functions(self):
@@ -26,17 +30,19 @@ class MKLApothecary(object):
         return Aggregator(self.functions_arguments, l_index=[0])
 
     @cached_property
-    def total_time(self):
-        return sum(time for _, time in self.functions.values())
+    def total_stock(self):
+        return sum(self.functions.values(), Stock(0,0.))
+
+    def pc_time(self,time, complement=False):
+        total_time = self.total_stock.time
+        if not complement:
+            return time, (100*time/total_time)
+        else:
+            return total_time-time, 100 * (1 - time/total_time )
 
     @cached_property
     def total_count(self):
-        return sum(count for count,_ in self.functions.values())
-
-    @cached_property
-    def longest_functions(self):
-        return self.functions_arguments.longuest_not_aggregated
-
+        return self.total_stock.count
 
 class BLASApothecary(MKLApothecary):
 
@@ -109,42 +115,44 @@ class BLASApothecary(MKLApothecary):
 
     def display_raw(self):
         headers = ['Name', 'Argv','Time (s)', '%']
-        top = [ (name, self.translate_argv(name,argv), time, (100*time/self.total_time)) for time,name, *argv in self.longest_functions]
+        top = [ (name, self.translate_argv(name,argv), *self.pc_time(time)) for time,name, *argv in self.longest_functions]
         
         time_partial = sum(time for time, *_ in self.longest_functions)
-        top.append( ('other', ' ', self.total_time-time_partial, 100 - 100*(time_partial/self.total_time)) ) 
+        top.append( ('other', ' ', *self.pc_time(time_partial, complement=True)) ) 
         return f"\nTop {self.n} functions by execution time\n" + tabulate(top, headers)
 
-    def peeling_data(self,r,n):
-        time_partial = r.partial_time(n)
-        count_partial = r.partial_count(n)
+    def peeling_data(self,agregated_data,n):
+        '''
+        Print the remainder of the agregated_data
+        '''
+        diff_count =  self.total_stock.count - agregated_data.partial_stock(n).count
 
-        if self.total_count - count_partial:
-            return self.total_count - count_partial, self.total_time-time_partial, 100* (1 - (time_partial/self.total_time)) 
+        if diff_count:
+            return (diff_count, *self.pc_time(agregated_data.partial_stock(n).time, complement=True))
         else:
-            return  0, 0., 0.
+            return  (0, 0., 0.)
 
     def display_merge_argv(self, n):
         headers = ['Name', 'Argv','Count (#)','Time (s)', '%']
-        top = [ (name, self.translate_argv(name,argv), count, time, (100*time/self.total_time)) for (name, *argv), (count, time) in self.functions_arguments.longuest(n) ]
+        top = [ (name, self.translate_argv(name,argv), s.count, *self.pc_time(s.time) ) for (name, *argv), s in self.functions_arguments.longuest(n) ]
         top.append( ('other', '',  *self.peeling_data(self.functions_arguments,n) ) )
         return f"\nTop {n} functions by execution time (accumulated by arguments)\n" + tabulate(top, headers)
     
     def display_merge_name(self, n):
         headers = ['Name','Count (#)','Time (s)', '%']
-        top = [ (name, count, time, (100*time/self.total_time)) for (name, ), (count, time) in self.functions.longuest(n) ]
+        top = [ ( name, s.count, *self.pc_time(s.time) ) for (name, ), s in self.functions.longuest(n) ]
         top.append( ('other',  *self.peeling_data(self.functions,n) ) )
         return f"\nTop {n} functions by execution time (accumulated by names)\n" + tabulate(top, headers)
     
 class FFTApothecary(MKLApothecary):
 
     def display_raw(self):
-        top = [ (*argv, time, (100*time/self.total_time)) for time,*argv in self.longest_functions]
         headers = ['precision','domain','direction','placement','dimensions','Time (s)', '%']
+        top = [ (*argv, *self.pc_time(time) ) for time,*argv in self.longest_functions]
         return f"\nTop {self.n} FFT calls by execution time\n" + tabulate(top, headers)
 
     def display_merge_argv(self, n):
         headers = ['precision','domain','direction','placement','dimensions', 'Count (#)','Time (s)', '%']
-        top = ( (*argv, count, time, (100*time/self.total_time)) for argv, (count, time) in self.functions_arguments.longuest(n) )
+        top = ( (*argv, s.count, *self.pc_time(s.time) ) for argv, s in self.functions_arguments.longuest(n) )
         return f"\nTop {n} FFT calls by execution time (accumulated)\n" + tabulate(top, headers)
 

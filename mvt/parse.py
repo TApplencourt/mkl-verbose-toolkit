@@ -1,9 +1,7 @@
 from typing import Dict, Tuple, TextIO, Match, Iterator
 import re
 import logging
-from functools import lru_cache
 
-@lru_cache()
 def stringtosecond(s: str) -> float:
     d_rosetta_time = {'ns':1.e-9, 'us':1.e-6, 'ms':1.e-3, 's': 1}
     value, exposant = re.match(r"([\.\d]+)(.*)", s).groups() 
@@ -53,10 +51,11 @@ def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
         name, arguments = name_argument[:-1].split('(')
 
         if name != 'FFT':
+            # Parse MKL argument, do not store pointer arguments. 
             l_arguments =  [ (i,arg) for i,arg in enumerate(arguments.split(',')) if not arg.startswith('0x') ]
             yield "lapack", [ name, *l_arguments, time ] 
         else:
             # TODO handle other argument. tlim?
             d = re.match("(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx]*)",arguments).groupdict()
-            l_arguments = (d_rosetta_fft[d[name]] for name in ('precision','domain','direction','placement'))
+            l_arguments = (d_rosetta_fft[d[n]] for n in ('precision','domain','direction','placement'))
             yield "fft", [ *l_arguments, d['dimensions'],  time] 

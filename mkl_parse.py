@@ -6,19 +6,17 @@ from mvt.parse import parse_iter
 import greenlet
 from tqdm import tqdm
 
-def mkl(it_,count):
-    db = BLASApothecary( (line for (type_, line) in it_ if type_ is "lapack"), n=count)
+def mkl(it,count):
+    db = BLASApothecary( (line for (type_, line) in it if type_ is "lapack"), n=count)
  
-    return (db.total_count, 
-            db.total_time,
+    return (db.total_stock, 
             db.display_merge_name(count),
             db.display_merge_argv(count),
             db.display_raw() )
 
-def fft(it_,count):
-    db = FFTApothecary( (line for (type_, line) in it_ if type_ is "fft"), n=count)
-    return (db.total_count,
-            db.total_time,
+def fft(it,count):
+    db = FFTApothecary( (line for (type_, line) in it if type_ is "fft"), n=count)
+    return (db.total_stock,
             db.display_merge_argv(count),
             db.display_raw() )
 
@@ -58,24 +56,24 @@ def mkl_greenlet(it,count):
 
 def parse_and_display(f,count):
 
-    (db_total_count, db_total_time, db_display_merge_name, db_display_merge_argv,  db_display_raw), (df_total_count, df_total_time, df_display_merge_argv, df_display_raw) = mkl_greenlet(f, count) 
+    (db_total_stock, db_display_merge_name, db_display_merge_argv,  db_display_raw), (df_total_stock, df_display_merge_argv, df_display_raw) = mkl_greenlet(f, count) 
 
     print ('~= SUMMARY ~=')
 
     headers = ['','Count (#)','Time (s)']
-    top =  [ ('BLAS / LAPACK', db_total_count, db_total_time),
-             ('FFT', df_total_count, df_total_time) ]
+    top =  [ ('BLAS / LAPACK', db_total_stock.count, db_total_stock.time),
+             ('FFT', db_total_stock.count, db_total_stock.time) ]
     print (tabulate(top, headers))
     print ('')
 
-    if db_total_count:
+    if db_total_stock.count:
         print ('~= BLAS / LAPACK ~=')
         print (db_display_merge_name)
         print (db_display_merge_argv)
         print (db_display_raw)
 
     print ('')
-    if df_total_count:
+    if df_total_stock.count:
         print ('~= FFT ~=')
         print (df_display_merge_argv)
         print (df_display_raw)
