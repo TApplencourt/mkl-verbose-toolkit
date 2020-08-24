@@ -16,6 +16,37 @@ def stringtosecond(s: str) -> float:
     else:
         raise ValueError
 
+
+def tokenizer_mkl_arg(argument):
+    '''
+    >>> list(tokenizer_mkl_arg("SGEMM(N,N,3072,3072,62,0x7ffe51792158,0x3193990,3072,0x32539a0,64,0x7ffe51792170,0x7fddd45a7080,3072)"))
+    [(0, 'N'), (1, 'N'), (2, '3072'), (3, '3072'), (4, '62'), (7, '3072'), (9, '64'), (12, '3072')]
+    >>> list(tokenizer_mkl_arg("PDPOTRF(l,1024,(nil),1,1,0x7fff5c591294,0,nb={1024,1024},myid={8,0},process_grid={32,1})"))
+    [(0, 'l'), (1, '1024'), (2, 'nil'), (3, '1'), (4, '1'), (6, '0')]
+    '''
+    inside_tuple = False
+    count = 0
+    old = 0
+    active = False
+
+    # Super ugly, to refractor. Gramar and have fun?
+    for i, char in enumerate(argument):
+
+        if char in ",)" and not inside_tuple and active:
+            arg = argument[old:i] 
+            if argument[old:old+2] != '0x' and not arg.startswith('{'):
+                yield count, arg
+            count += 1
+            active = False
+        
+        if char in '(=,' and not inside_tuple:
+            old = i+1
+            active = True
+        elif char == '{':
+            inside_tuple = True
+        elif char == '}':
+            inside_tuple = False
+
 def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
 
    d_rosetta_fft = {'s': "Single",
@@ -43,7 +74,7 @@ def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
 
         try:
             time = stringtosecond(time)
-        except (AttributeError, KeyError, ValueError):
+        except (IndexError, AttributeError, KeyError, ValueError):
             logging.error(f'Cannot parse line {i}: {line.strip()}.')
             continue
 
@@ -56,15 +87,24 @@ def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
         except AssertionError:
             logging.error(f'Cannot parse line {i}: {line.strip()}. Missing a closing parenthesis')
             continue
-         
-        name, arguments = name_argument[:-1].split('(')
+        
+        name, arguments = name_argument[:-1].split('(',1)
 
         if name != 'FFT':
-            # Parse MKL argument, do not store pointer arguments. 
-            l_arguments =  [ (i,arg) for i,arg in enumerate(arguments.split(',')) if not arg.startswith('0x') ]
+            # Parse MKL argument, do not store pointer arguments.
+            """
+            MKL_VERBOSE PDPOTRF(l,1024,(nil),1,1,0x7fff5c591294,0,nb={1024,1024},myid={8,0},process_grid={32,1})
+            MKL_VERBOSE SGEMM(N,N,3072,3072,62,0x7ffe51792158,0x3193990,3072,0x32539a0,64,0x7ffe51792170,0x7fddd45a7080,3072)
+            """
+            l_arguments =  list(tokenizer_mkl_arg(arguments.strip()))
             yield "lapack", [ name, *l_arguments, time ] 
         else:
             # TODO handle other argument. tlim?
-            d = re.match("(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx]*)",arguments).groupdict()
+            '''
+            MKL_VERBOSE FFT(scfi7x13,tLim:1,desc:0x514a0c0) 32.49us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:24 
+            MKL_VERBOSE FFT(dcbo400*3951,tLim:1,desc:0x514a0c0) 32.49us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:24 
+            MKL_VERBOSE FFT(dcbo400x400*3951,tLim:1,desc:0x514a0c0) 32.49us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:24 
+            '''
+            d = re.match("(?P<precision>[sd])(?P<domain>[cr])(?P<direction>[fb])(?P<placement>[io])(?P<dimensions>[\dx*]*)",arguments).groupdict()
             l_arguments = (d_rosetta_fft[d[n]] for n in ('precision','domain','direction','placement'))
             yield "fft", [ *l_arguments, d['dimensions'],  time] 

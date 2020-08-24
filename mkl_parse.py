@@ -62,7 +62,7 @@ def parse_and_display(f,count):
 
     headers = ['','Count (#)','Time (s)']
     top =  [ ('BLAS / LAPACK', db_total_stock.count, db_total_stock.time),
-             ('FFT', db_total_stock.count, db_total_stock.time) ]
+             ('FFT', df_total_stock.count, df_total_stock.time) ]
     print (tabulate(top, headers))
     print ('')
 

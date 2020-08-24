@@ -104,7 +104,7 @@ class BLASApothecary(MKLApothecary):
         regex = r"\b(?P<name>%s)\s*\((?P<arg>.*?)\)" % '|'.join(map(re.escape,d_mkl_name))
         prog = re.compile(regex, re.MULTILINE | re.DOTALL)
 
-        for path in (f"{mkl_path}/include/mkl_lapack.h", f"{mkl_path}/include/mkl_blas.h"):
+        for path in (f"{mkl_path}/include/mkl_lapack.h", f"{mkl_path}/include/mkl_blas.h", f"{mkl_path}/include/mkl_scalapack.h"):
             with open(path, 'r') as f:
                 for match in prog.finditer(f.read()):
                     name, argv = match.groups()
