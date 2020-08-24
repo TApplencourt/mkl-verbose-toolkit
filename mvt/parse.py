@@ -19,33 +19,19 @@ def stringtosecond(s: str) -> float:
 
 def tokenizer_mkl_arg(argument):
     '''
-    >>> list(tokenizer_mkl_arg("SGEMM(N,N,3072,3072,62,0x7ffe51792158,0x3193990,3072,0x32539a0,64,0x7ffe51792170,0x7fddd45a7080,3072)"))
+    >>> tokenizer_mkl_arg("N,N,3072,3072,62,0x7ffe51792158,0x3193990,3072,0x32539a0,64,0x7ffe51792170,0x7fddd45a7080,3072)")
     [(0, 'N'), (1, 'N'), (2, '3072'), (3, '3072'), (4, '62'), (7, '3072'), (9, '64'), (12, '3072')]
-    >>> list(tokenizer_mkl_arg("PDPOTRF(l,1024,(nil),1,1,0x7fff5c591294,0,nb={1024,1024},myid={8,0},process_grid={32,1})"))
+    >>> tokenizer_mkl_arg("l,1024,(nil),1,1,0x7fff5c591294,0,nb={1024,1024},myid={8,0},process_grid={32,1})")
     [(0, 'l'), (1, '1024'), (2, 'nil'), (3, '1'), (4, '1'), (6, '0')]
     '''
-    inside_tuple = False
-    count = 0
-    old = 0
-    active = False
-
-    # Super ugly, to refractor. Gramar and have fun?
-    for i, char in enumerate(argument):
-
-        if char in ",)" and not inside_tuple and active:
-            arg = argument[old:i] 
-            if argument[old:old+2] != '0x' and not arg.startswith('{'):
-                yield count, arg
-            count += 1
-            active = False
-        
-        if char in '(=,' and not inside_tuple:
-            old = i+1
-            active = True
-        elif char == '{':
-            inside_tuple = True
-        elif char == '}':
-            inside_tuple = False
+    try:
+        idx=argument.index('=')
+        # Need to remove the last arguments who are a relicate of the `=`
+        *l_arg, _= argument[:idx].split(',')
+    except ValueError:
+        l_arg = argument.split(',')         
+    # () replacement take care of the last `(` and of this `(nil)` arguments
+    return [ (i,a.replace('(','').replace(')','')) for i,a in enumerate(l_arg) if not a.startswith('0x') ]
 
 def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
 
@@ -96,8 +82,7 @@ def parse_iter(f: TextIO, time_thr = 1e-6 ) -> Iterator[ Tuple[Match,Match] ]:
             MKL_VERBOSE PDPOTRF(l,1024,(nil),1,1,0x7fff5c591294,0,nb={1024,1024},myid={8,0},process_grid={32,1})
             MKL_VERBOSE SGEMM(N,N,3072,3072,62,0x7ffe51792158,0x3193990,3072,0x32539a0,64,0x7ffe51792170,0x7fddd45a7080,3072)
             """
-            l_arguments =  list(tokenizer_mkl_arg(arguments.strip()))
-            yield "lapack", [ name, *l_arguments, time ] 
+            yield "lapack", [ name, *tokenizer_mkl_arg(arguments.strip()), time ] 
         else:
             # TODO handle other argument. tlim?
             '''
