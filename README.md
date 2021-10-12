@@ -28,6 +28,8 @@ For FTT, display the rank and I/O tensors. Support batched calls.
 ## Requirement / Installation:
 - python3
 - tabulate package
+- greenlet
+- tqdm
 
 ```
 pip install -r requirements.txt
