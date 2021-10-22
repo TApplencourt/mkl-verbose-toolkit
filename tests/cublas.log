@@ -1,0 +1,106 @@
+I! cuBLAS (v11.4) function cublasStatus_t cublasCreate_v2(cublasContext**) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x7f5fb32e75b8)
+i! Time: 2021-10-11T18:30:39 elapsed from start 0.016667 minutes or 1.000000 seconds
+i!Process=13837; Thread=140049006944256; GPU=0; Handle=POINTER (IN HEX:0x(nil))
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasCgetrfBatched(cublasHandle_t, int, cuComplex* const*, int, int*, int*, int) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3bfcae00)
+i!  n: type=int; val=48
+i!  Aarray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7f5ee9980000)
+i!  lda: type=int; val=48
+i!  P: type=int; val=POINTER (IN HEX:0x0x7f5e9e000000)
+i!  INFO: type=int; val=POINTER (IN HEX:0x0x7f5ee99c0000)
+i!  batchSize: type=int; val=4096
+i! Time: 2021-10-11T18:30:40 elapsed from start 0.033333 minutes or 2.000000 seconds
+i!Process=13837; Thread=140049006944256; GPU=0; Handle=POINTER (IN HEX:0x0x3bfcae00); StreamId=POINTER (IN HEX:0x(nil)) (defaultStream); MathMode=CUBLAS_DEFAULT_MATH
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasCgetriBatched(cublasHandle_t, int, const cuComplex* const*, int, const int*, cuComplex* const*, int, int*, int) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3bfcae00)
+i!  n: type=int; val=48
+i!  Aarray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7f5ee9980000)
+i!  lda: type=int; val=48
+i!  PivotArray: type=int; val=POINTER (IN HEX:0x0x7f5e9e000000)
+i!  Carray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7f5ee9988000)
+i!  ldc: type=int; val=48
+i!  info: type=int; val=POINTER (IN HEX:0x0x7f5ee99c0000)
+i!  batchSize: type=int; val=4096
+i! Time: 2021-10-11T18:30:40 elapsed from start 0.033333 minutes or 2.000000 seconds
+i!Process=13837; Thread=140049006944256; GPU=0; Handle=POINTER (IN HEX:0x0x3bfcae00); StreamId=POINTER (IN HEX:0x(nil)) (defaultStream); MathMode=CUBLAS_DEFAULT_MATH
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasCgetrfBatched(cublasHandle_t, int, cuComplex* const*, int, int*, int*, int) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3bfcae00)
+i!  n: type=int; val=64
+i!  Aarray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7f5eed5e1800)
+i!  lda: type=int; val=64
+i!  P: type=int; val=POINTER (IN HEX:0x0x7f5eea9f0000)
+i!  INFO: type=int; val=POINTER (IN HEX:0x0x7f5eed5e1400)
+i!  batchSize: type=int; val=256
+i! Time: 2021-10-11T18:30:40 elapsed from start 0.033333 minutes or 2.000000 seconds
+i!Process=13837; Thread=140049006944256; GPU=0; Handle=POINTER (IN HEX:0x0x3bfcae00); StreamId=POINTER (IN HEX:0x(nil)) (defaultStream); MathMode=CUBLAS_DEFAULT_MATH
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasCgetriBatched(cublasHandle_t, int, const cuComplex* const*, int, const int*, cuComplex* const*, int, int*, int) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3bfcae00)
+i!  n: type=int; val=64
+i!  Aarray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7f5eed5e1800)
+i!  lda: type=int; val=64
+i!  PivotArray: type=int; val=POINTER (IN HEX:0x0x7f5eea9f0000)
+i!  Carray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7f5eed5e2000)
+i!  ldc: type=int; val=64
+i!  info: type=int; val=POINTER (IN HEX:0x0x7f5eed5e1400)
+i!  batchSize: type=int; val=256
+i! Time: 2021-10-11T18:30:40 elapsed from start 0.033333 minutes or 2.000000 seconds
+i!Process=13837; Thread=140049006944256; GPU=0; Handle=POINTER (IN HEX:0x0x3bfcae00); StreamId=POINTER (IN HEX:0x(nil)) (defaultStream); MathMode=CUBLAS_DEFAULT_MATH
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasDestroy_v2(cublasHandle_t) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3bfcae00)
+i! Time: 2021-10-11T18:30:43 elapsed from start 0.083333 minutes or 5.000000 seconds
+i!Process=13837; Thread=140049006944256; GPU=0; Handle=POINTER (IN HEX:0x0x3bfcae00); StreamId=POINTER (IN HEX:0x(nil)) (defaultStream); MathMode=CUBLAS_DEFAULT_MATH
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+i!Process=64150; Thread=140376765468672; GPU=0; Handle=POINTER (IN HEX:0x(nil))
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasCgetrfBatched(cublasHandle_t, int, cuComplex* const*, int, int*, int*, int) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3b3db1a0)
+i!  n: type=int; val=48
+i!  Aarray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7fa9dae00000)
+i!  lda: type=int; val=48
+i!  P: type=int; val=POINTER (IN HEX:0x0x7fa9c4000000)
+i!  INFO: type=int; val=POINTER (IN HEX:0x0x7fa9c2e00000)
+i!  batchSize: type=int; val=20736
+i! Time: 2021-10-11T20:38:50 elapsed from start 0.050000 minutes or 3.000000 seconds
+i!Process=64150; Thread=140376765468672; GPU=0; Handle=POINTER (IN HEX:0x0x3b3db1a0); StreamId=POINTER (IN HEX:0x(nil)) (defaultStream); MathMode=CUBLAS_DEFAULT_MATH
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasCgetriBatched(cublasHandle_t, int, const cuComplex* const*, int, const int*, cuComplex* const*, int, int*, int) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3b3db1a0)
+i!  n: type=int; val=48
+i!  Aarray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7fa9dae00000)
+i!  lda: type=int; val=48
+i!  PivotArray: type=int; val=POINTER (IN HEX:0x0x7fa9c4000000)
+i!  Carray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7fa9dae28800)
+i!  ldc: type=int; val=48
+i!  info: type=int; val=POINTER (IN HEX:0x0x7fa9c2e00000)
+i!  batchSize: type=int; val=20736
+i! Time: 2021-10-11T20:38:50 elapsed from start 0.050000 minutes or 3.000000 seconds
+i!Process=64150; Thread=140376765468672; GPU=0; Handle=POINTER (IN HEX:0x0x3b3db1a0); StreamId=POINTER (IN HEX:0x(nil)) (defaultStream); MathMode=CUBLAS_DEFAULT_MATH
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasCgetrfBatched(cublasHandle_t, int, cuComplex* const*, int, int*, int*, int) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3b3db1a0)
+i!  n: type=int; val=64
+i!  Aarray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7faa991e7600)
+i!  lda: type=int; val=64
+i!  P: type=int; val=POINTER (IN HEX:0x0x7fa8fbf95000)
+i!  INFO: type=int; val=POINTER (IN HEX:0x0x7faa991e6000)
+i!  batchSize: type=int; val=1296
+i! Time: 2021-10-11T20:38:51 elapsed from start 0.066667 minutes or 4.000000 seconds
+i!Process=64150; Thread=140376765468672; GPU=0; Handle=POINTER (IN HEX:0x0x3b3db1a0); StreamId=POINTER (IN HEX:0x(nil)) (defaultStream); MathMode=CUBLAS_DEFAULT_MATH
+i! COMPILED WITH: GNU GCC/G++ / 6.3.1 20170216 (Red Hat 6.3.1-3)
+I! cuBLAS (v11.4) function cublasStatus_t cublasCgetriBatched(cublasHandle_t, int, const cuComplex* const*, int, const int*, cuComplex* const*, int, int*, int) called:
+i!  handle: type=cublasHandle_t; val=POINTER (IN HEX:0x0x3b3db1a0)
+i!  n: type=int; val=64
+i!  Aarray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7faa991e7600)
+i!  lda: type=int; val=64
+i!  PivotArray: type=int; val=POINTER (IN HEX:0x0x7fa8fbf95000)
+i!  Carray: type=SOME TYPE; val=POINTER (IN HEX:0x0x7faa991e9e80)
+i!  ldc: type=int; val=64
+i!  info: type=int; val=POINTER (IN HEX:0x0x7faa991e6000)
+i!  batchSize: type=int; val=1296
+i! Time: 2021-10-11T20:38:51 elapsed from start 0.066667 minutes or 4.000000 seconds

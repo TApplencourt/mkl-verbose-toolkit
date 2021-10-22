@@ -164,3 +164,37 @@ class FFTApothecary(MKLApothecary):
         top = ( (*argv, s.count, *self.pc_time(s.time) ) for argv, s in self.functions_arguments.longuest(n) )
         return f"\nTop {n} FFT calls by execution time (accumulated)\n" + tabulate(top, headers)
 
+class cuBLASApothecary(MKLApothecary):
+
+    def peeling_data(self,agregated_data,n):
+        '''
+        Print the remainder of the agregated_data
+        '''
+        diff_count =  self.total_stock.count - agregated_data.partial_stock(n).count
+
+        if diff_count:
+            return (diff_count, *self.pc_time(agregated_data.partial_stock(n).time, complement=True))
+        else:
+            return  (0, 0., 0.)
+
+    def display_merge_argv(self, n):
+        headers = ['Name', 'Argv','Count (#)','Time (s)', '%']
+        top = [ (name, argv, s.count, *self.pc_time(s.time) ) for (name, *argv), s in self.functions_arguments.longuest(n) ]
+        top.append( ('other', '',  *self.peeling_data(self.functions_arguments,n) ) )
+        return f"\nTop {n} functions by execution time (accumulated by arguments)\n" + tabulate(top, headers)
+
+    def display_merge_name(self, n):
+        headers = ['Name','Count (#)','Time (s)', '%']
+        top = [ ( name, s.count, *self.pc_time(s.time) ) for (name, ), s in self.functions.longuest(n) ]
+        top.append( ('other',  *self.peeling_data(self.functions,n) ) )
+        return f"\nTop {n} functions by execution time (accumulated by names)\n" + tabulate(top, headers)
+
+
+    def display_raw(self):
+        headers = ['Name', 'Argv','Time (s)', '%']
+        top = [ (name, argv, *self.pc_time(time)) for time,name, *argv in self.longest_functions]
+
+        time_partial = sum(time for time, *_ in self.longest_functions)
+        top.append( ('other', ' ', *self.pc_time(time_partial, complement=True)) )
+        return f"\nTop {self.n} functions by execution time\n" + tabulate(top, headers)
+

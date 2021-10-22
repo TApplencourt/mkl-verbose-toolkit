@@ -8,38 +8,41 @@ ___  ___ _   __ _       _   _ _________________  _____ _____ _____   _____ _____
                                                                                                                  
 ```
 
-When building applications that call Intel MKL functions, it may be useful to determine:
+When building applications that call Intel MKL functions / cuBLAS functions, it may be useful to determine:
  - which computational functions are called,
  - what parameters are passed to them, and
  - how much time is spent to execute the functions.
 
-You can get an application to print this information to a standard output device by enabling Intel MKL Verbose. More information at https://software.intel.com/en-us/articles/verbose-mode-supported-in-intel-mkl-112
+You can get an application to print this information to a standard output device by enabling Intel MKL Verbose (https://software.intel.com/en-us/articles/verbose-mode-supported-in-intel-mkl-112) or cuBLAS log (https://docs.nvidia.com/cuda/cublas/index.html#cublasLoggerConfigure) 
 
-We propose 2 script to facilitate the generation and the parsing of MKL Verbose log file:
-- To parse the log file and generate summary tables, use `mkl_parse`.
-- To restrict the verbosity for one MPI_RANK, use `mkl_hook` wrapper.
+We propose  script to facilitate the generation and the parsing of Math Verbose log file:
+- To parse the log file and generate summary tables, use `mkl_parse.py`` or `cublas_parse.py`
+- To restrict the verbosity for one `MPI_RANK`, use `mkl_hook` wrapper.
 
-# mkl_parse 
-Generate a summary for "MKL_verbosed" log files.
+# {mkl,cublas}_parse 
+Generate a summary for "{MKL,cublas}_verbosed" log files.
 For LAPACK, display the cummulative time spend by function, the range of arguments of those function, and the most expensive function calls.
 
 For FTT, display the rank and I/O tensors. Support batched calls.
 
 ## Requirement / Installation:
-- python3
-- tabulate package
-- greenlet
-- tqdm
 
+`python3` is need and the following packages:
+
+- `tabulate`
+- `greenlet`
+- `tqdm`
+
+One can simply do:
 ```
 pip install -r requirements.txt
 conda install --file requirements.txt
 ```
 ## Usage
 ```
-usage: mkl_parse.py [-h] [-n #] [filename]
+usage: {mkl,cublas}_parse.py [-h] [-n #] [filename]
 
-Generate a summary for "MKL_verbosed" log files. $MKLROOT will be used to
+Generate a summary for "{MKL,cublas}_verbosed" log files. $MKLROOT will be used to
 match MKL arguments name with respective values.
 
 positional arguments:
@@ -53,7 +56,7 @@ optional arguments:
 
 Please set `$MKLROOT` to get the name of BLAS/LAPACK arguments in the summary.
  
-##  Example
+## MKL Example
 ```
 >> cat log.out | wc -l
 141013
