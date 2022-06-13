@@ -2,7 +2,7 @@ MKL_VERBOSE Intel(R) MKL 2019.0 Update 2 Product build 20190118 for Intel(R) 64 
 MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1c9c140) 452.82us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
 MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cb66c0) 118.36us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
 MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1cc0240) 165.08us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
-MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cc9680 84.77us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
+MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cc9680) 84.77us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
 Some ramdom output fro
 MKL_VERBOSE FFT(dcfi30x30x30,tLim:4,desc:0x1cc0240) 102.58us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
 MKL_VERBOSE FFT(dcbi30x30x30,tLim:4,desc:0x1cc9680) 83.00us CNR:OFF Dyn:1 FastMM:1 TID:0  NThr:4
