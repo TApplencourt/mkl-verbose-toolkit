@@ -3,6 +3,7 @@
 from tabulate import tabulate
 from mvt.display import BLASApothecary, FFTApothecary
 from mvt.parse import parse_iter
+from mvt.open import open_compressed
 import greenlet
 from tqdm import tqdm
 
@@ -89,7 +90,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     if args.filename:
-        f = open(args.filename, 'r')
+        f = open_compressed(args.filename, 'rt')
     elif not sys.stdin.isatty():
         f = sys.stdin
     else:

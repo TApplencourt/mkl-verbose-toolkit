@@ -2,6 +2,7 @@
 
 from tabulate import tabulate
 from mvt.display import cuBLASApothecary
+from mvt.open import open_compressed
 from tqdm import tqdm
 
 def parse_iter_blask(f, time_thr = 1e-6):
@@ -60,7 +61,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     if args.filename:
-        f = open(args.filename, 'r')
+        f = open_compressed(args.filename, 'rt')
     elif not sys.stdin.isatty():
         f = sys.stdin 
     else:
